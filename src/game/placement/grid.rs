@@ -5,6 +5,23 @@ use bevy::{
 };
 use hexx::*;
 
+#[derive(Resource)]
+pub struct Grid {
+	pub hex_map: HashMap<Hex, f32>,
+}
+impl Default for Grid {
+	fn default() -> Self {Self {
+		hex_map: HashMap::from([
+			(hex(0, 0), 0.),
+			(hex(1, 0), 1.),
+			(hex(0, 1), 2.),
+			(hex(1, 1), 3.),
+			(hex(2, 1), 4.),
+			(hex(1, 2), 5.),
+		])
+	}}
+}
+
 /// Converts hexx MeshInfo into bevy Mesh.
 /// From hexx docs example: https://docs.rs/hexx/latest/hexx/index.html#usage-in-bevy
 pub fn hexagonal_mesh(mesh_info: MeshInfo) -> Mesh {
@@ -18,21 +35,13 @@ pub fn hexagonal_mesh(mesh_info: MeshInfo) -> Mesh {
     .with_inserted_indices(Indices::U16(mesh_info.indices))
 }
 
-pub fn setup_grid(
+pub fn setup(
 	mut commands: Commands,
 	mut meshes: ResMut<Assets<Mesh>>,
-	mut materials: ResMut<Assets<StandardMaterial>>
+	mut materials: ResMut<Assets<StandardMaterial>>,
+	grid: Res<Grid>,
 ) {
-	let map: HashMap<Hex, f32> = HashMap::from([
-		(hex(0, 0), 1.),
-		(hex(1, 0), 2.),
-		(hex(0, 1), 3.),
-		(hex(1, 1), 4.),
-		(hex(2, 1), 5.),
-		(hex(1, 2), 6.),
-	]);
-
-	let mesh_info = HeightMapMeshBuilder::new(&HexLayout::default(), &map).build();
+	let mesh_info = HeightMapMeshBuilder::new(&HexLayout::default(), &grid.hex_map).build();
 	
 	commands.spawn((
 		Mesh3d(meshes.add(hexagonal_mesh(mesh_info))),

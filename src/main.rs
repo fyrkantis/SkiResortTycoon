@@ -1,7 +1,8 @@
 use bevy::prelude::{App, DefaultPlugins};
 use bevy_egui::EguiPlugin;
 
-use ski_resort_tycoon::game;
+mod game;
+mod util;
 
 fn main() {
 	App::new()
