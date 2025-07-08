@@ -45,12 +45,14 @@ pub struct Grid {
 	pub settings: WorldGenSettings
 }
 impl Grid {
+	/// Generates a new grid with set width and length.
+	/// It is recommended to use an odd number for width to avoid sharp corners.
 	pub fn new(width: u16, length: u16, settings: WorldGenSettings) -> Self {
 		let mut cells: HashMap<Hex, GridCell> = HashMap::new();
 		let perlin = Perlin::new(0);
 		let max_z = length as f64 * f64::sqrt(3.); // TODO: Use fancy new std::f32::consts::SQRT_3 when available. https://github.com/rust-lang/rust/issues/103883
 		for col in 0..width as i32 {
-			for row in 0..length as i32 {
+			for row in 0..length as i32 + (col % 2) { // Adds one extra row every other column (avoids sharp corners.
 				let pos_axial = offset_to_axial(col, row);
 				
 				let [x, z] = axial_to_xz(&pos_axial); // NOTE: xz are pixel coordinates, not hexagonal.
@@ -72,7 +74,7 @@ impl Grid {
 pub struct GridPlugin;
 impl Plugin for GridPlugin {
 	fn build(&self, app: &mut App) {
-		app.insert_resource(Grid::new(75, 50, WorldGenSettings::default()));
+		app.insert_resource(Grid::new(95, 50, WorldGenSettings::default()));
 		app.add_systems(Startup, setup);
 	}
 }
@@ -83,6 +85,7 @@ pub fn setup(
 	mut materials: ResMut<Assets<StandardMaterial>>,
 	grid: Res<Grid>,
 ) {
+	let snow_material = materials.add(Color::WHITE);
 	for (pos, cell) in &grid.cells {
 		let mesh_info = ColumnMeshBuilder::new(&HexLayout::flat(), cell.height as f32).build();
 		let [x, z] = axial_to_xz(pos);
@@ -90,8 +93,14 @@ pub fn setup(
 		commands.spawn((
 			Mesh3d(meshes.add(hexagonal_mesh(mesh_info))),
 			Transform::from_xyz(x, 0., z),
-			MeshMaterial3d(materials.add(Color::hsv((360. * cell.height as f64 / (grid.settings.peak_height + grid.settings.slope_height)) as f32, 1., 0.8))),
-		));
+			MeshMaterial3d(snow_material.clone()),
+		))
+		.observe(|
+			mut trigger: Trigger<Pointer<Click>>,
+			mut commands: Commands,
+		| {
+			println!("Mouse over");
+		});
 	}
 }
 
