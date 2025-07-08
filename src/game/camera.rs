@@ -16,7 +16,7 @@ impl Default for CameraSettings {
 	fn default() -> Self {
 		Self {
 			fov: 70.,
-			movement_speed: 20.,
+			movement_speed: 40.,
 			sensitivity: 0.001
 		}
 	}
@@ -38,7 +38,11 @@ pub fn setup(
 	commands.spawn((
 		Camera3d::default(),
 		Projection::from(PerspectiveProjection::default()),
-		Transform::from_xyz(10.0, 12.0, 16.0).looking_at(Vec3::ZERO, Vec3::Y)
+		Transform {
+			translation: Vec3::new(-15., 30., -15.),
+			rotation: Quat::from_euler(EulerRot::YXZ, 1.25 * PI, PI / -8., 0.),
+			..default()
+		}
 	));
 }
 

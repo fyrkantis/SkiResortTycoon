@@ -1,3 +1,4 @@
+use std::f32::consts::PI;
 use bevy::prelude::*;
 
 pub struct ScenePlugin;
@@ -17,12 +18,13 @@ fn setup(
 		handle: gizmo_assets.add(axes_gizmo),
 		..default()
 	});
-	
+
 	commands.spawn((
-		PointLight {
+		DirectionalLight {
+			illuminance: light_consts::lux::FULL_DAYLIGHT,
 			shadows_enabled: true,
 			..default()
 		},
-		Transform::from_xyz(4.0, 8.0, 4.0),
+		Transform::from_rotation(Quat::from_euler(EulerRot::YXZ, -0.75 * PI, PI / -8., 0.))
 	));
 }

@@ -4,6 +4,7 @@ use bevy::{
 	render::{mesh::Indices, render_asset::RenderAssetUsages, render_resource::PrimitiveTopology}
 };
 use hexx::*;
+use noise::{Perlin, NoiseFn};
 
 use crate::util::hex::{axial_to_xz, offset_to_axial};
 
@@ -21,24 +22,49 @@ pub struct GridCell {
 }
 pub const fn empty_cell(height: u16) -> GridCell {GridCell {height: height, state: CellState::Empty}}
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct WorldGenSettings {
+	/// 1-50
+	pub peak_height: f64,
+	/// 1-50
+	pub peak_width: f64,
+	/// 1-50
+	pub slope_height: f64, // TODO: Add more parameters.
+}
+impl Default for WorldGenSettings {
+	fn default() -> Self {Self {
+		peak_height: 10., peak_width: 30., slope_height: 40.
+	}}
+}
+
 #[derive(Resource, Debug, Clone)]
 pub struct Grid {
 	pub cells: HashMap<Hex, GridCell>,
 	pub width: u16,
-	pub length: u16
+	pub length: u16,
+	pub settings: WorldGenSettings
 }
 impl Grid {
-	pub fn new(width: u16, length: u16) -> Self {
+	pub fn new(width: u16, length: u16, settings: WorldGenSettings) -> Self {
 		let mut cells: HashMap<Hex, GridCell> = HashMap::new();
+		let perlin = Perlin::new(0);
+		let max_z = length as f64 * f64::sqrt(3.); // TODO: Use fancy new std::f32::consts::SQRT_3 when available. https://github.com/rust-lang/rust/issues/103883
 		for col in 0..width as i32 {
 			for row in 0..length as i32 {
-				cells.insert(offset_to_axial(col, row), empty_cell(2));
+				let pos_axial = offset_to_axial(col, row);
+				
+				let [x, z] = axial_to_xz(&pos_axial); // NOTE: xz are pixel coordinates, not hexagonal.
+				let height = perlin.get([x as f64 / settings.peak_width, z as f64 / settings.peak_width])
+				* settings.peak_height + (z as f64 / max_z) * settings.slope_height;
+
+				cells.insert(pos_axial, empty_cell(height as u16));
 			}
 		}
 		Grid {
 			cells: cells,
 			width: width,
-			length: length
+			length: length,
+			settings: settings,
 		}
 	}
 }
@@ -46,7 +72,7 @@ impl Grid {
 pub struct GridPlugin;
 impl Plugin for GridPlugin {
 	fn build(&self, app: &mut App) {
-		app.insert_resource(Grid::new(75, 50));
+		app.insert_resource(Grid::new(75, 50, WorldGenSettings::default()));
 		app.add_systems(Startup, setup);
 	}
 }
@@ -64,7 +90,7 @@ pub fn setup(
 		commands.spawn((
 			Mesh3d(meshes.add(hexagonal_mesh(mesh_info))),
 			Transform::from_xyz(x, 0., z),
-			MeshMaterial3d(materials.add(Color::srgb(pos.x as f32 / 3., pos.y as f32 / 3., pos.z() as f32 / 3.))),
+			MeshMaterial3d(materials.add(Color::hsv((360. * cell.height as f64 / (grid.settings.peak_height + grid.settings.slope_height)) as f32, 1., 0.8))),
 		));
 	}
 }
