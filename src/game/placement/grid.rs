@@ -5,6 +5,8 @@ use bevy::{
 };
 use hexx::*;
 
+use crate::util::hex::{axial_to_xz, offset_to_axial};
+
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub enum CellState {
 	#[default]
@@ -22,24 +24,29 @@ pub const fn empty_cell(height: u16) -> GridCell {GridCell {height: height, stat
 #[derive(Resource, Debug, Clone)]
 pub struct Grid {
 	pub cells: HashMap<Hex, GridCell>,
+	pub width: u16,
+	pub length: u16
 }
-impl Default for Grid {
-	fn default() -> Self {Self {
-		cells: HashMap::from([
-			(hex(0, 0), empty_cell(0)),
-			(hex(1, 0), empty_cell(1)),
-			(hex(0, 1), empty_cell(2)),
-			(hex(1, 1), empty_cell(3)),
-			(hex(2, 1), empty_cell(4)),
-			(hex(1, 2), empty_cell(5)),
-		])
-	}}
+impl Grid {
+	pub fn new(width: u16, length: u16) -> Self {
+		let mut cells: HashMap<Hex, GridCell> = HashMap::new();
+		for col in 0..width as i32 {
+			for row in 0..length as i32 {
+				cells.insert(offset_to_axial(col, row), empty_cell(2));
+			}
+		}
+		Grid {
+			cells: cells,
+			width: width,
+			length: length
+		}
+	}
 }
 
 pub struct GridPlugin;
 impl Plugin for GridPlugin {
 	fn build(&self, app: &mut App) {
-		app.insert_resource(Grid::default());
+		app.insert_resource(Grid::new(75, 50));
 		app.add_systems(Startup, setup);
 	}
 }
@@ -51,8 +58,8 @@ pub fn setup(
 	grid: Res<Grid>,
 ) {
 	for (pos, cell) in &grid.cells {
-		let mesh_info = ColumnMeshBuilder::new(&HexLayout::default(), cell.height as f32).build();
-		let [x, z] = crate::util::hex::hex_to_xz(pos);
+		let mesh_info = ColumnMeshBuilder::new(&HexLayout::flat(), cell.height as f32).build();
+		let [x, z] = axial_to_xz(pos);
 		
 		commands.spawn((
 			Mesh3d(meshes.add(hexagonal_mesh(mesh_info))),

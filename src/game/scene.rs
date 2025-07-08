@@ -8,8 +8,16 @@ impl Plugin for ScenePlugin {
 }
 
 fn setup(
-	mut commands: Commands
+	mut commands: Commands,
+	mut gizmo_assets: ResMut<Assets<GizmoAsset>>,
 ) {
+	let mut axes_gizmo = GizmoAsset::new();
+	axes_gizmo.axes(Transform::default(), 5.);
+	commands.spawn(Gizmo {
+		handle: gizmo_assets.add(axes_gizmo),
+		..default()
+	});
+	
 	commands.spawn((
 		PointLight {
 			shadows_enabled: true,
