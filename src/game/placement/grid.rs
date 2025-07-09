@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use bevy::prelude::*;
 use hexx::Hex;
 use noise::{Perlin, NoiseFn};
+use rand::prelude::*;
 
 use crate::util::hex::{axial_to_xz, offset_to_axial};
 use crate::game::surface::Surface;
@@ -43,7 +44,8 @@ impl Grid {
 	/// It is recommended to use an odd number for width to avoid sharp corners.
 	pub fn new(width: u16, length: u16, settings: WorldGenSettings) -> Self {
 		let mut cells: HashMap<Hex, GridCell> = HashMap::new();
-		let perlin = Perlin::new(0);
+		let mut rng = rand::rng();
+		let perlin = Perlin::new(rng.random());
 		let max_z = length as f64 * f64::sqrt(3.); // TODO: Use fancy new std::f32::consts::SQRT_3 when available. https://github.com/rust-lang/rust/issues/103883
 		for col in 0..width as i32 {
 			for row in 0..length as i32 + (col % 2) { // Adds one extra row every other column (avoids sharp corners.

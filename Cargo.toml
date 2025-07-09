@@ -9,6 +9,7 @@ bevy_egui = "0.34.1"
 hexx = { version = "0.21.0", features = ["bevy"] }
 noise = "0.9.0"
 log = { version = "*", features = ["max_level_debug", "release_max_level_warn"] }
+rand = "0.9.1"
 
 # https://bevy.org/learn/quick-start/getting-started/setup/#compile-with-performance-optimizations
 
