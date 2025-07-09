@@ -1,12 +1,13 @@
 use bevy::prelude::*;
 use bevy_egui::*;
 
-use crate::game::item::ITEMS;
+use crate::game::item::ItemList;
 use crate::game::placement::cursor::Cursor;
 
 pub fn ui_system(
 	mut contexts: EguiContexts,
 	mut cursor: ResMut<Cursor>,
+	items: Res<ItemList>,
 ) {
 	egui::Window::new("Build")
 	.collapsible(false)
@@ -14,7 +15,7 @@ pub fn ui_system(
 	.show(contexts.ctx_mut(), |ui| {
 		ui.label("Items");
 		ui.horizontal(|ui| {
-			for item in ITEMS.iter() {
+			for item in items.0.iter() {
 				let mut frame = egui::Frame::new()
 				.fill(ui.visuals().widgets.open.bg_fill)
 				.stroke(ui.visuals().widgets.open.bg_stroke)

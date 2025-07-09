@@ -15,9 +15,7 @@ fn main() {
 		DefaultPlugins,
 		MeshPickingPlugin,
 		EguiPlugin {enable_multipass_for_primary_context: true},
-		game::camera::CameraPlugin,
-		game::scene::ScenePlugin,
-		game::placement::PlacementPlugin,
+		game::GamePlugin,
 		ui::UiPlugin,
 	))
 	.run();
