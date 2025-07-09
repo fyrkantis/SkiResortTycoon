@@ -4,21 +4,17 @@ use hexx::Hex;
 use noise::{Perlin, NoiseFn};
 
 use crate::util::hex::{axial_to_xz, offset_to_axial};
-
-#[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
-pub enum CellState {
-	#[default]
-	Empty,
-	Piste,
-	Structure
-}
+use crate::game::surface::Surface;
+use crate::game::item::Item;
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct GridCell {
 	pub height: u16,
-	pub state: CellState,
+	pub surface: Surface,
+	pub item: Option<Item>,
 }
-pub const fn empty_cell(height: u16) -> GridCell {GridCell {height: height, state: CellState::Empty}}
+// TODO: Use const fn default when available. https://github.com/rust-lang/rust/issues/67792
+pub const fn empty_cell(height: u16) -> GridCell {GridCell {height: height, surface: Surface::Normal, item: None}}
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct WorldGenSettings {
@@ -66,12 +62,5 @@ impl Grid {
 			length: length,
 			settings: settings,
 		}
-	}
-}
-
-pub struct GridPlugin;
-impl Plugin for GridPlugin {
-	fn build(&self, app: &mut App) {
-		app.insert_resource(Grid::new(95, 50, WorldGenSettings::default()));
 	}
 }

@@ -8,13 +8,6 @@ use crate::util::hex::axial_to_xz;
 use crate::game::placement::grid::Grid;
 use crate::game::placement::cursor::Cursor;
 
-pub struct GridRenderPlugin;
-impl Plugin for GridRenderPlugin {
-	fn build(&self, app: &mut App) {
-		app.add_systems(Startup, setup);
-	}
-}
-
 #[derive(Component, Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct CellHex(Hex);
 
@@ -43,15 +36,27 @@ pub fn setup(
 			println!("Hex Click: {:?}", pos);
 		})
 		.observe(|
-			mut trigger: Trigger<Pointer<Over>>,
+			mut trigger: Trigger<Pointer<Over>>, // Mouse hovering.
 			cells: Query<&CellHex>,
 			grid: Res<Grid>,
 			mut cursor: ResMut<Cursor>,
 		| {
 			
-			let pos = match cells.get(trigger.target()) {Ok(pos) => pos, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellHex position: {}", e); return}};
-			let cell = match grid.cells.get(&pos.0) {Some(cell) => cell, None => {error!("Mouse hovered over cell, but it's CellHex position could not be found in grid."); return}};
-			cursor.hover_cell = Some((pos.0, *cell));
+			let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellHex position: {}", e); return}};
+			let cell = match grid.cells.get(&pos) {Some(cell) => cell, None => {error!("Mouse hovered over cell, but it's CellHex position could not be found in grid."); return}};
+			cursor.hover_cell = Some((pos, *cell));
+		})
+		.observe(|
+			mut trigger: Trigger<Pointer<Out>>, // Mouse no longer hovering.
+			cells: Query<&CellHex>,
+			grid: Res<Grid>,
+			mut cursor: ResMut<Cursor>,
+		| {
+			let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellHex position: {}", e); return}};
+			let current_pos = match cursor.hover_cell {Some((current_pos, _current_cursor)) => current_pos, None => {return}};
+			if current_pos == pos {
+				cursor.hover_cell = None;
+			}
 		});
 	}
 }

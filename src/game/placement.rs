@@ -1,13 +1,16 @@
-use bevy::prelude::{Plugin, App};
+use bevy::prelude::{Plugin, App, Startup, Update};
 
-pub mod grid;
-pub mod cursor;
-pub mod grid_select;
-pub mod grid_render;
+mod grid;
+mod cursor;
+mod grid_select;
+mod grid_render;
 
 pub struct PlacementPlugin;
 impl Plugin for PlacementPlugin {
 	fn build(&self, app: &mut App) {
-		app.add_plugins((grid::GridPlugin, cursor::CursorPlugin, grid_render::GridRenderPlugin, grid_select::GridSelectPlugin));
+		app.insert_resource(grid::Grid::new(95, 50, Default::default()));
+		app.insert_resource(cursor::Cursor::default());
+		app.add_systems(Startup, grid_render::setup);
+		app.add_systems(Update, grid_select::cell_highlight_system);
 	}
 }
