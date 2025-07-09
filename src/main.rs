@@ -6,6 +6,7 @@ use bevy::prelude::{App, DefaultPlugins, MeshPickingPlugin};
 use bevy_egui::EguiPlugin;
 
 mod game;
+mod ui;
 mod util;
 
 fn main() {
@@ -17,6 +18,7 @@ fn main() {
 		game::camera::CameraPlugin,
 		game::scene::ScenePlugin,
 		game::placement::PlacementPlugin,
+		ui::UiPlugin,
 	))
 	.run();
 }

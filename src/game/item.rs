@@ -4,9 +4,9 @@ use bevy::{prelude::Srgba, color::palettes::tailwind};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Item {
-	id: usize,
-	name: &'static str,
-	color: Srgba,
+	pub id: usize,
+	pub name: &'static str,
+	pub color: Srgba,
 }
 /// Constructs new item.
 pub const fn item(id: usize, name: &'static str, color: Srgba) -> Item {Item {id: id, name: name, color: color}}

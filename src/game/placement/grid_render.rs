@@ -29,14 +29,14 @@ pub fn setup(
 			Transform::from_xyz(x, 0., z),
 		))
 		.observe(|
-			mut trigger: Trigger<Pointer<Pressed>>,
+			trigger: Trigger<Pointer<Pressed>>,
 			cells: Query<&CellHex>,
 		| {
 			let pos = match cells.get(trigger.target()) {Ok(pos) => pos, Err(e) => {error!("Mouse clicked cell, but it's missing a CellHex position: {}", e); return}};
 			println!("Hex Click: {:?}", pos);
 		})
 		.observe(|
-			mut trigger: Trigger<Pointer<Over>>, // Mouse hovering.
+			trigger: Trigger<Pointer<Over>>, // Mouse hovering.
 			cells: Query<&CellHex>,
 			grid: Res<Grid>,
 			mut cursor: ResMut<Cursor>,
@@ -47,7 +47,7 @@ pub fn setup(
 			cursor.hover_cell = Some((pos, *cell));
 		})
 		.observe(|
-			mut trigger: Trigger<Pointer<Out>>, // Mouse no longer hovering.
+			trigger: Trigger<Pointer<Out>>, // Mouse no longer hovering.
 			cells: Query<&CellHex>,
 			grid: Res<Grid>,
 			mut cursor: ResMut<Cursor>,
