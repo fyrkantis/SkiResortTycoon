@@ -1,18 +1,16 @@
 use std::collections::HashMap;
-use bevy::{
-	prelude::*,
-	render::{mesh::Indices, render_asset::RenderAssetUsages, render_resource::PrimitiveTopology}
-};
-use hexx::*;
+use bevy::prelude::*;
+use hexx::Hex;
 use noise::{Perlin, NoiseFn};
 
 use crate::util::hex::{axial_to_xz, offset_to_axial};
 
-#[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum CellState {
 	#[default]
 	Empty,
-	Occupied
+	Piste,
+	Structure
 }
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -75,44 +73,5 @@ pub struct GridPlugin;
 impl Plugin for GridPlugin {
 	fn build(&self, app: &mut App) {
 		app.insert_resource(Grid::new(95, 50, WorldGenSettings::default()));
-		app.add_systems(Startup, setup);
 	}
-}
-
-pub fn setup(
-	mut commands: Commands,
-	mut meshes: ResMut<Assets<Mesh>>,
-	mut materials: ResMut<Assets<StandardMaterial>>,
-	grid: Res<Grid>,
-) {
-	let snow_material = materials.add(Color::WHITE);
-	for (pos, cell) in &grid.cells {
-		let mesh_info = ColumnMeshBuilder::new(&HexLayout::flat(), cell.height as f32).build();
-		let [x, z] = axial_to_xz(pos);
-		
-		commands.spawn((
-			Mesh3d(meshes.add(hexagonal_mesh(mesh_info))),
-			Transform::from_xyz(x, 0., z),
-			MeshMaterial3d(snow_material.clone()),
-		))
-		.observe(|
-			mut trigger: Trigger<Pointer<Click>>,
-			mut commands: Commands,
-		| {
-			println!("Mouse over");
-		});
-	}
-}
-
-/// Converts hexx MeshInfo into bevy Mesh.
-/// From hexx docs example: https://docs.rs/hexx/latest/hexx/index.html#usage-in-bevy
-pub fn hexagonal_mesh(mesh_info: MeshInfo) -> Mesh {
-    Mesh::new(
-        PrimitiveTopology::TriangleList,
-        RenderAssetUsages::RENDER_WORLD, // Won't interact with the mesh on the CPU afterwards
-    )
-    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, mesh_info.vertices)
-    .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, mesh_info.normals)
-    .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, mesh_info.uvs)
-    .with_inserted_indices(Indices::U16(mesh_info.indices))
 }
