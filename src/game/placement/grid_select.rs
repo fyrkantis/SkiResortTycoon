@@ -1,32 +1,70 @@
 use bevy::prelude::*;
+use hexx::Hex;
 
-use crate::util::hex::{axial_to_xz, HexCorner};
-use crate::game::placement::cursor::Cursor;
+use crate::util::{
+	hex::axial_to_xz,
+	hex_mesh::hexagonal_mesh,
+};
+use crate::game::placement::{grid::Grid, cursor::Cursor};
 
-pub struct GridSelectPlugin;
-impl Plugin for GridSelectPlugin {
-	fn build(&self, app: &mut App) {
-		app.add_systems(Update, cell_highlight_system);
-	}
-}
+#[derive(Component, Debug, PartialEq, Eq, Clone, Copy, Hash)]
+pub struct CellHex(Hex);
 
-pub fn cell_highlight_system(
-	mut gizmos: Gizmos,
-	cursor: Res<Cursor>,
+pub fn setup(
+	mut commands: Commands,
+	mut meshes: ResMut<Assets<Mesh>>,
+	grid: Res<Grid>,
 ) {
-	let (pos, cell) = match &cursor.hover_cell {Some(hover_cell) => hover_cell, None => return};
-	let height = cell.height as f32;
-	let [x, z] = axial_to_xz(&pos);
+	for (pos, cell) in &grid.cells {
+		let mesh_info = hexx::ColumnMeshBuilder::new(&hexx::HexLayout::flat(), cell.height as f32).build();
+		let [x, z] = axial_to_xz(pos);
+		
+		commands.spawn((
+			CellHex(*pos),
+			Mesh3d(meshes.add(hexagonal_mesh(mesh_info))),
+			Transform::from_xyz(x, 0., z),
+		))
+		.observe(|
+			trigger: Trigger<Pointer<Click>>,
+			cells: Query<&CellHex>,
+			mut grid: ResMut<Grid>,
+		| {
+			let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse clicked cell, but it's missing a CellHex position: {}", e); return}};
+			println!("Hex Click: {:?}", pos);
 
-	for (i, c) in HexCorner::get_array().iter().enumerate() {
-		let cn = HexCorner::get_array()[(i + 1) % 6];
-		let [cx, cz] = c.to_xz();
-		let [cnx, cnz] = cn.to_xz();
-
-		let v = Vec3::new(x + cx, height, z + cz);
-		let vn = Vec3::new(x + cnx, height, z + cnz);
-		let vb = Vec3::new(x + cx, 0., z + cz);
-		gizmos.line(v, vn, Color::srgb(1., 0., 0.));
-		gizmos.line(v, vb, Color::srgb(0., 0., 1.));
+			let cell = match grid.cells.get_mut(&pos) {Some(cell) => cell, None => {error!("Mouse clicked cell, but it's CellHex position could not be found in grid."); return}};
+			if trigger.button == PointerButton::Primary {
+				cell.height += 1;
+			} else if trigger.button == PointerButton::Secondary {
+				if cell.height <= 0 {
+					warn!("Can't lower cell {:?} because it's already at height {}.", pos, cell.height);
+				} else {
+					cell.height -= 1;
+				}
+			}
+		})
+		.observe(|
+			trigger: Trigger<Pointer<Over>>, // Mouse hovering.
+			cells: Query<&CellHex>,
+			grid: Res<Grid>,
+			mut cursor: ResMut<Cursor>,
+		| {
+			
+			let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellHex position: {}", e); return}};
+			let cell = match grid.cells.get(&pos) {Some(cell) => cell, None => {error!("Mouse hovered over cell, but it's CellHex position could not be found in grid."); return}};
+			cursor.hover_cell = Some((pos, *cell));
+		})
+		.observe(|
+			trigger: Trigger<Pointer<Out>>, // Mouse no longer hovering.
+			cells: Query<&CellHex>,
+			grid: Res<Grid>,
+			mut cursor: ResMut<Cursor>,
+		| {
+			let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellHex position: {}", e); return}};
+			let current_pos = match cursor.hover_cell {Some((current_pos, _current_cursor)) => current_pos, None => {return}};
+			if current_pos == pos {
+				cursor.hover_cell = None;
+			}
+		});
 	}
 }
