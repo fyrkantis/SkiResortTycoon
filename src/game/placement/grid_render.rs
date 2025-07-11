@@ -1,10 +1,10 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::render_asset::RenderAssetUsages};
 
 use crate::util::hex_mesh::mountain_mesh_sharp;
 use crate::game::placement::grid::Grid;
 
-#[derive(Resource, Debug, Clone)]
-pub struct MountainMesh(Handle<Mesh>);
+#[derive(Component)]
+pub struct MountainMesh;
 
 pub fn setup(
 	mut commands: Commands,
@@ -12,25 +12,20 @@ pub fn setup(
 	mut materials: ResMut<Assets<StandardMaterial>>,
 	grid: Res<Grid>,
 ) {
-	let mountain_mesh_handle = meshes.add(mountain_mesh_sharp(&grid));
-	commands.insert_resource(MountainMesh(mountain_mesh_handle.clone()));
 	commands.spawn((
-		Mesh3d(mountain_mesh_handle.clone()),
+		MountainMesh,
+		Mesh3d(meshes.add(mountain_mesh_sharp(&grid, RenderAssetUsages::all()))),
 		MeshMaterial3d(materials.add(Color::WHITE)),
+		Pickable {should_block_lower: false, is_hoverable: false},
 	));
 }
 
 pub fn update(
-	mut commands: Commands,
 	mut meshes: ResMut<Assets<Mesh>>,
 	grid: Res<Grid>,
-	mountain_mesh_handle: Res<MountainMesh>,
+	mountain_mesh: Single<&Mesh3d, With<MountainMesh>>,
 ) {
-	info_once!("{:?}", meshes.add(mountain_mesh_sharp(&grid)));
-	info_once!("{:?}", mountain_mesh_handle.0);
-	match meshes.get_mut(&mountain_mesh_handle.0) {
-		Some(mountain_mesh) => warn!("Yay!"),
-		None => error_once!("Damn."),
-	}
+	let mesh = match meshes.get_mut(&mountain_mesh.0) {Some(mesh) => mesh, None => {error_once!("Failed to update mountain mesh, since it could not be found in asset."); return}};
+	*mesh = mountain_mesh_sharp(&grid, RenderAssetUsages::all());
 }
 

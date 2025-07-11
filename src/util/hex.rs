@@ -1,5 +1,7 @@
 use hexx::Hex;
 
+use crate::game::placement::grid::Grid; // TODO: Replace with trait describing HashMap<Hex, u16>.
+
 // TODO: Use fancy new std::f32::consts::SQRT_3 when available. https://github.com/rust-lang/rust/issues/103883
 const SQRT_3: f32 = 1.732050807568877293527446341505872367;
 
@@ -51,12 +53,12 @@ impl HexCorner {
 	pub const fn to_xz(&self) -> [f32; 2] {
 		const SQRT_3_DIV_2: f32 = SQRT_3 / 2.;
 		match self {
-			Self::TopRight => [0.5, SQRT_3_DIV_2],
+			Self::TopRight => [0.5, -SQRT_3_DIV_2],
 			Self::MiddleRight => [1., 0.],
-			Self::BottomRight => [0.5, -SQRT_3_DIV_2],
-			Self::BottomLeft => [-0.5, -SQRT_3_DIV_2],
+			Self::BottomRight => [0.5, SQRT_3_DIV_2],
+			Self::BottomLeft => [-0.5, SQRT_3_DIV_2],
 			Self::MiddleLeft => [-1., 0.],
-			Self::TopLeft => [-0.5, SQRT_3_DIV_2],
+			Self::TopLeft => [-0.5, -SQRT_3_DIV_2],
 		}
 	}
 	pub const fn neighbor_edges(&self) -> [HexEdge; 2] {
@@ -71,6 +73,29 @@ impl HexCorner {
 	}
 	pub const fn get_array() -> [HexCorner; 6] {
 		[Self::TopRight, Self::MiddleRight, Self::BottomRight, Self::BottomLeft, Self::MiddleLeft, Self::TopLeft]
+	}
+}
+
+/// Calculates the height of a corner of a hex cell in a grid (which is an average of all surounding cell heights.
+/// Panics if pos is not in grid.cells.
+pub fn corner_height(grid: &Grid, pos: &Hex, corner: HexCorner) -> f32 {
+	let [edge_1, edge_2] = corner.neighbor_edges();
+	// Positions of vertex neighboring cells.
+	let (pos_1, pos_2) = (*pos + edge_1.direction(), *pos + edge_2.direction());
+	let (cell_1_opt, cell_2_opt) = (grid.cells.get(&pos_1), grid.cells.get(&pos_2));
+
+	let center_y = grid.cells.get(pos).unwrap().height as f32;
+
+	// Average height of all 1-3 cells.
+	match cell_1_opt {
+		Some(cell_1) => match cell_2_opt {
+			Some(cell_2) => (center_y + cell_1.height as f32 + cell_2.height as f32) / 3.,
+			None => (center_y + cell_1.height as f32) / 2.,
+		},
+		None => match cell_2_opt {
+			Some(cell_2) => (center_y + cell_2.height as f32) / 2.,
+			None => center_y,
+		}
 	}
 }
 

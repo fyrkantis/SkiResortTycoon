@@ -2,7 +2,7 @@
 // https://github.com/bevyengine/bevy_github_ci_template/issues/55#issue-2391468497
 #![cfg_attr(not(feature = "fast-compile"), windows_subsystem = "windows")]
 
-use bevy::prelude::{App, DefaultPlugins, MeshPickingPlugin};
+use bevy::prelude::{App, DefaultPlugins, MeshPickingPlugin, PickingPlugin};
 use bevy_egui::EguiPlugin;
 
 mod game;

@@ -1,9 +1,9 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::render_asset::RenderAssetUsages};
 use hexx::Hex;
 
 use crate::util::{
 	hex::axial_to_xz,
-	hex_mesh::hexagonal_mesh,
+	hex_mesh::column_mesh,
 };
 use crate::game::placement::{grid::Grid, cursor::Cursor};
 
@@ -16,12 +16,10 @@ pub fn setup(
 	grid: Res<Grid>,
 ) {
 	for (pos, cell) in &grid.cells {
-		let mesh_info = hexx::ColumnMeshBuilder::new(&hexx::HexLayout::flat(), cell.height as f32).build();
 		let [x, z] = axial_to_xz(pos);
-		
 		commands.spawn((
 			CellHex(*pos),
-			Mesh3d(meshes.add(hexagonal_mesh(mesh_info))),
+			Mesh3d(meshes.add(column_mesh(cell.height as f32, RenderAssetUsages::MAIN_WORLD))),
 			Transform::from_xyz(x, 0., z),
 		))
 		.observe(|

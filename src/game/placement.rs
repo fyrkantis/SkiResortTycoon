@@ -12,26 +12,23 @@ impl Plugin for PlacementPlugin {
 	fn build(&self, app: &mut App) {
 		app.insert_resource(grid::Grid::new(95, 50, Default::default()));
 		app.insert_resource(cursor::Cursor::default());
-		app.add_systems(Startup, (grid_render::setup, grid_select::setup, temp));
-		app.add_systems(Update, grid_highlight::update);
+		app.add_systems(Startup, (grid_render::setup, grid_select::setup));
+		app.add_systems(Update, (grid_highlight::update/*, temp*/));
 		app.add_systems(FixedUpdate, grid_render::update);
 	}
 }
 
 fn temp(
-	mut commands: Commands,
-	mut gizmo_assets: ResMut<Assets<GizmoAsset>>,
+	mut gizmos: Gizmos,
 	grid: Res<grid::Grid>,
 ) {
-	let mut gizmo = GizmoAsset::new();
-	for (pos, cell) in grid.cells.iter() {
-		crate::util::hex_gizmo::column_level(
-			&mut gizmo,
+	for (pos, _) in grid.cells.iter() {
+		crate::util::hex_gizmo::column(
+			&mut gizmos,
 			pos,
-			cell.height as f32,
-			Some(Color::srgb(0., 1., 0.)),
+			&grid,
+			Some(Color::srgba(0., 0.8, 0., 0.25)),
 			None,
 		);
 	}
-	commands.spawn(Gizmo {handle: gizmo_assets.add(gizmo), ..default()});
 }
