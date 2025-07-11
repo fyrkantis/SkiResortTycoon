@@ -16,5 +16,6 @@ pub fn update(
 		&grid,
 		Some(Color::srgb(1., 0., 0.)),
 		Some(Color::srgb(0., 0., 1.)),
+		Some(Color::srgb(0.8, 0., 1.)),
 	);
 }

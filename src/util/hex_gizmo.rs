@@ -10,8 +10,10 @@ pub fn column_level<Config: GizmoConfigGroup, Clear: 'static + Send + Sync>( // 
 	height: f32,
 	c_top: Option<Color>,
 	c_sides: Option<Color>,
+	c_star: Option<Color>,
 ) {
 	let [x, z] = axial_to_xz(pos);
+	let center = Vec3::new(x, height, z);
 	for (i, c1) in HexCorner::get_array().iter().enumerate() {
 		let c2 = HexCorner::get_array()[(i + 1) % 6];
 		let [c1x, c1z] = c1.to_xz();
@@ -22,6 +24,7 @@ pub fn column_level<Config: GizmoConfigGroup, Clear: 'static + Send + Sync>( // 
 		let v1b = Vec3::new(x + c1x, 0., z + c1z);
 		match c_top {Some(color) => gizmos.line(v1, v2, color), None => ()}
 		match c_sides {Some(color) => gizmos.line(v1, v1b, color), None => ()}
+		match c_star {Some(color) => gizmos.line(center, v1, color), None => ()}
 	}
 }
 
@@ -31,8 +34,11 @@ pub fn column<Config: GizmoConfigGroup, Clear: 'static + Send + Sync>( // TODO: 
 	grid: &Grid,
 	c_top: Option<Color>,
 	c_sides: Option<Color>,
+	c_star: Option<Color>,
 ) {
 	let [x, z] = axial_to_xz(pos);
+	let height = grid.cells.get(pos).unwrap().height as f32;
+	let center = Vec3::new(x, height, z);
 	for (i, c1) in HexCorner::get_array().iter().enumerate() {
 		let c2 = HexCorner::get_array()[(i + 1) % 6];
 		let [c1x, c1z] = c1.to_xz();
@@ -43,5 +49,6 @@ pub fn column<Config: GizmoConfigGroup, Clear: 'static + Send + Sync>( // TODO: 
 		let v1b = Vec3::new(x + c1x, 0., z + c1z);
 		match c_top {Some(color) => gizmos.line(v1, v2, color), None => ()}
 		match c_sides {Some(color) => gizmos.line(v1, v1b, color), None => ()}
+		match c_star {Some(color) => gizmos.line(center, v1, color), None => ()}
 	}
 }

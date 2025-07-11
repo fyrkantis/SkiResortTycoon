@@ -8,6 +8,7 @@ use hexx::{Hex, ColumnMeshBuilder, HexLayout};
 use crate::util::hex::{axial_to_xz, HexCorner, corner_height};
 use crate::game::placement::grid::Grid; // TODO: Replace with trait describing HashMap<Hex, u16>.
 
+#[allow(dead_code)] // TODO: Remove this function if still unused.
 pub fn column_mesh(height: f32, asset_usage: RenderAssetUsages) -> Mesh {
 	let mesh_info = ColumnMeshBuilder::new(&HexLayout::flat(), height).build();
 
@@ -42,6 +43,24 @@ pub fn mountain_mesh_sharp(grid: &Grid, asset_usage: RenderAssetUsages) -> Mesh 
 	.with_computed_smooth_normals()
 }
 
+fn cell_mesh_vertices(grid: &Grid, pos: &Hex, world_transform: bool) -> Vec<Vec3> {
+	let [center_x, center_z] = if world_transform {axial_to_xz(pos)} else {[0., 0.]};
+	let cell = grid.cells.get(pos).unwrap();
+	vec![Vec3::new(center_x, cell.height as f32, center_z)]
+	.into_iter().chain(HexCorner::get_array().iter().map(|corner| {
+			let [corner_x, corner_z] = corner.to_xz();
+			Vec3::new(center_x + corner_x, corner_height(grid, pos, *corner), center_z + corner_z)
+		})
+	).collect()
+}
+
+pub fn cell_mesh(grid: &Grid, pos: &Hex, asset_usage: RenderAssetUsages) -> Mesh {
+	Mesh::new(PrimitiveTopology::TriangleList, asset_usage)
+	.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, cell_mesh_vertices(grid, pos, false))
+	.with_inserted_indices(Indices::U16(vec![0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 5, 4, 0, 6, 5, 0, 1, 6]))
+	.with_computed_smooth_normals()
+}
+
 #[allow(dead_code)] // TODO: Remove this function if still unused.
 /// Mesh consisting of soft hexagons.
 pub fn mountain_mesh_fuzzy(grid: &Grid, asset_usage: RenderAssetUsages) -> Mesh {
@@ -49,15 +68,8 @@ pub fn mountain_mesh_fuzzy(grid: &Grid, asset_usage: RenderAssetUsages) -> Mesh 
 	let mut vertices_count: u16 = 0;
 	let mut triangles: Vec<u16> = Vec::new();
 	for (pos, cell) in grid.cells.iter() {
-		let center_y = cell.height as f32;
-		let [center_x, center_z] = axial_to_xz(pos);
-		let center_cords = Vec3::new(center_x, center_y, center_z);
 		let center_index = vertices_count;
-		vertices.push(center_cords);
-		HexCorner::get_array().iter().for_each(|corner| {
-			let [x, z] = corner.to_xz();
-			vertices.push(Vec3::new(center_x + x, corner_height(grid, pos, *corner), center_z - z));
-		});
+		vertices.extend(cell_mesh_vertices(grid, pos, true));
 		vertices_count += 7;
 		for i in 0..6 {
 			triangles.push(center_index);

@@ -3,7 +3,7 @@ use hexx::Hex;
 
 use crate::util::{
 	hex::axial_to_xz,
-	hex_mesh::column_mesh,
+	hex_mesh::cell_mesh,
 };
 use crate::game::placement::{grid::Grid, cursor::Cursor};
 
@@ -15,11 +15,11 @@ pub fn setup(
 	mut meshes: ResMut<Assets<Mesh>>,
 	grid: Res<Grid>,
 ) {
-	for (pos, cell) in &grid.cells {
+	for (pos, _) in &grid.cells {
 		let [x, z] = axial_to_xz(pos);
 		commands.spawn((
 			CellHex(*pos),
-			Mesh3d(meshes.add(column_mesh(cell.height as f32, RenderAssetUsages::MAIN_WORLD))),
+			Mesh3d(meshes.add(cell_mesh(&grid, pos, RenderAssetUsages::MAIN_WORLD))),
 			Transform::from_xyz(x, 0., z),
 		))
 		.observe(|
@@ -55,7 +55,6 @@ pub fn setup(
 		.observe(|
 			trigger: Trigger<Pointer<Out>>, // Mouse no longer hovering.
 			cells: Query<&CellHex>,
-			grid: Res<Grid>,
 			mut cursor: ResMut<Cursor>,
 		| {
 			let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellHex position: {}", e); return}};
@@ -64,5 +63,19 @@ pub fn setup(
 				cursor.hover_cell = None;
 			}
 		});
+	}
+}
+
+pub fn update(
+	mut meshes: ResMut<Assets<Mesh>>,
+	grid: Res<Grid>,
+	query: Query<(&CellHex, &Mesh3d)>,
+) {
+	for (cell, mesh_handle) in query.iter() {
+		let pos = cell.0;
+		match meshes.get_mut(&mesh_handle.0) {
+			Some(mesh) => *mesh = cell_mesh(&grid, &pos, RenderAssetUsages::MAIN_WORLD),
+			None => warn_once!("Failed to update selection mesh for cell {:?} because its mesh asset could not be found.", pos),
+		}
 	}
 }

@@ -13,8 +13,8 @@ impl Plugin for PlacementPlugin {
 		app.insert_resource(grid::Grid::new(95, 50, Default::default()));
 		app.insert_resource(cursor::Cursor::default());
 		app.add_systems(Startup, (grid_render::setup, grid_select::setup));
-		app.add_systems(Update, (grid_highlight::update/*, temp*/));
-		app.add_systems(FixedUpdate, grid_render::update);
+		app.add_systems(Update, (grid_highlight::update, temp));
+		app.add_systems(FixedUpdate, (grid_render::update, grid_select::update));
 	}
 }
 
@@ -28,6 +28,7 @@ fn temp(
 			pos,
 			&grid,
 			Some(Color::srgba(0., 0.8, 0., 0.25)),
+			None,
 			None,
 		);
 	}
