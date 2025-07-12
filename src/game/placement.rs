@@ -12,23 +12,6 @@ impl Plugin for PlacementPlugin {
 		app.insert_resource(grid::Grid::new(95, 50, Default::default()));
 		app.insert_resource(cursor::Cursor::default());
 		app.add_systems(Startup, grid_mesh::setup);
-		app.add_systems(Update, (grid_highlight::update, temp));
-		app.add_systems(FixedUpdate, grid_mesh::update);
-	}
-}
-
-fn temp(
-	mut gizmos: Gizmos,
-	grid: Res<grid::Grid>,
-) {
-	for (pos, _) in grid.cells.iter() {
-		crate::util::hex_gizmo::column_sloped(
-			&mut gizmos,
-			pos,
-			&grid,
-			Some(Color::srgba(0., 0.8, 0., 0.25)),
-			None,
-			None,
-		);
+		app.add_systems(Update, grid_highlight::update);
 	}
 }

@@ -32,6 +32,8 @@ pub fn setup(
 			trigger: Trigger<Pointer<Click>>,
 			cells: Query<&CellHex>,
 			mut grid: ResMut<Grid>,
+			mut query: Query<(&CellHex, &mut Mesh3d, &mut Aabb)>,
+			mut meshes: ResMut<Assets<Mesh>>,
 		| {
 			let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse clicked cell, but it's missing a CellHex position: {}", e); return}};
 			println!("Hex Click: {:?}", pos);
@@ -45,6 +47,16 @@ pub fn setup(
 				} else {
 					cell.height -= 1;
 				}
+			}
+			for (cell, mut mesh, mut aabb) in query.iter_mut() {
+				let pos = cell.0;
+				let new_mesh = cell_sharp_mesh(&grid, &pos, RenderAssetUsages::all());
+				// TODO: Remove this if mesh picking bug is fixed.
+				// Currently, the Axis-Aligned Bounding Box is
+				// not updated automatically when the mesh changes.
+				// https://github.com/bevyengine/bevy/issues/18221#issuecomment-2746183172
+				*aabb = new_mesh.compute_aabb().unwrap();
+				*mesh = Mesh3d(meshes.add(new_mesh));
 			}
 		})
 		.observe(|
@@ -69,25 +81,5 @@ pub fn setup(
 				cursor.hover_cell = None;
 			}
 		});
-	}
-}
-
-pub fn update(
-	mut meshes: ResMut<Assets<Mesh>>,
-	grid: Res<Grid>,
-	mut query: Query<(&CellHex, &mut Mesh3d, &mut Aabb)>,
-) {
-	if grid.is_changed() {
-		info_once!("Grid update!");
-		for (cell, mut mesh, mut aabb) in query.iter_mut() {
-			let pos = cell.0;
-			let new_mesh = cell_sharp_mesh(&grid, &pos, RenderAssetUsages::all());
-			// TODO: Remove this if mesh picking bug is fixed.
-			// Currently, the Axis-Aligned Bounding Box is
-			// not updated automatically when the mesh changes.
-			// https://github.com/bevyengine/bevy/issues/18221#issuecomment-2746183172
-			*aabb = new_mesh.compute_aabb().unwrap();
-			*mesh = Mesh3d(meshes.add(new_mesh));
-		}
 	}
 }
