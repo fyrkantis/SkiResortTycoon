@@ -32,7 +32,8 @@ pub fn setup(
 			trigger: Trigger<Pointer<Pressed>>,
 			cells: Query<&CellHex>,
 			mut grid: ResMut<Grid>,
-			mut query: Query<(&CellHex, &mut Mesh3d, &mut MeshMaterial3d<StandardMaterial>, &mut Aabb)>,
+			mut query_meshes: Query<(&CellHex, &mut Mesh3d, &mut Aabb)>,
+			mut query_materials: Query<(&CellHex, &mut MeshMaterial3d<StandardMaterial>)>,
 			mut meshes: ResMut<Assets<Mesh>>,
 			mut materials: ResMut<Assets<StandardMaterial>>,
 		| {
@@ -42,15 +43,17 @@ pub fn setup(
 			let cell = match grid.cells.get_mut(&pos) {Some(cell) => cell, None => {error!("Mouse clicked cell, but it's CellHex position could not be found in grid."); return}};
 			if trigger.button == PointerButton::Primary {
 				cell.height += 1;
+				update_meshes(&grid, query_meshes, &mut meshes);
+				update_materials(&grid, query_materials, &mut materials);
 			} else if trigger.button == PointerButton::Secondary {
 				if cell.height <= 0 {
 					warn!("Can't lower cell {:?} because it's already at height {}.", pos, cell.height);
 				} else {
 					cell.height -= 1;
+					update_meshes(&grid, query_meshes, &mut meshes);
+					update_materials(&grid, query_materials, &mut materials);
 				}
 			}
-			update_meshes(&grid, query.iter_mut().map(|(cell, mesh, _, aabb)| (cell, mesh, aabb)), &mut meshes);
-			update_materials(&grid, query.iter_mut().map(|(cell, _, material, _)| (cell, material)), &mut materials);
 		})
 		.observe(|
 			trigger: Trigger<Pointer<Over>>, // Mouse hovering.
@@ -77,12 +80,12 @@ pub fn setup(
 	}
 }
 
-pub fn update_meshes<'a>( // This is not a system.
+pub fn update_meshes( // This is not a system.
 	grid: &ResMut<Grid>,
-	query_iter: impl Iterator<Item = (&'a CellHex, Mut<'a, Mesh3d>, Mut<'a, Aabb>)>,
+	mut query: Query<(&CellHex, &mut Mesh3d, &mut Aabb)>,
 	meshes: &mut ResMut<Assets<Mesh>>,
 ) {
-	for (cell, mut mesh, mut aabb) in query_iter {
+	for (cell, mut mesh, mut aabb) in query.iter_mut() {
 		let pos = cell.0;
 		let new_mesh = cell_sharp_mesh(&grid, &pos, RenderAssetUsages::all());
 		// TODO: Remove this if mesh picking bug is fixed.
@@ -94,12 +97,12 @@ pub fn update_meshes<'a>( // This is not a system.
 	}
 }
 
-pub fn update_materials<'a>( // This is also not a system.
+pub fn update_materials( // This is also not a system.
 	grid: &ResMut<Grid>,
-	query_iter: impl Iterator<Item = (&'a CellHex, Mut<'a, MeshMaterial3d<StandardMaterial>>)>,
+	mut query: Query<(&CellHex, &mut MeshMaterial3d<StandardMaterial>)>,
 	materials: &mut ResMut<Assets<StandardMaterial>>,
 ) {
-	for (cell, mut material) in query_iter {
+	for (cell, mut material) in query.iter_mut() {
 		
 	}
 }
