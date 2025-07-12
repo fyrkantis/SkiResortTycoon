@@ -3,7 +3,7 @@ use hexx::Hex;
 
 use crate::util::{
 	hex::axial_to_xz,
-	hex_mesh::cell_mesh,
+	hex_mesh::cell_sharp_mesh,
 };
 use crate::game::placement::{grid::Grid, cursor::Cursor};
 
@@ -13,13 +13,16 @@ pub struct CellHex(Hex);
 pub fn setup(
 	mut commands: Commands,
 	mut meshes: ResMut<Assets<Mesh>>,
+	mut materials: ResMut<Assets<StandardMaterial>>,
 	grid: Res<Grid>,
 ) {
+	let it_snow = materials.add(Color::WHITE);
 	for (pos, _) in &grid.cells {
 		let [x, z] = axial_to_xz(pos);
 		commands.spawn((
 			CellHex(*pos),
-			Mesh3d(meshes.add(cell_mesh(&grid, pos, RenderAssetUsages::MAIN_WORLD))),
+			Mesh3d(meshes.add(cell_sharp_mesh(&grid, pos, RenderAssetUsages::all()))),
+			MeshMaterial3d(it_snow.clone()),
 			Transform::from_xyz(x, 0., z),
 		))
 		.observe(|
@@ -71,11 +74,14 @@ pub fn update(
 	grid: Res<Grid>,
 	query: Query<(&CellHex, &Mesh3d)>,
 ) {
-	for (cell, mesh_handle) in query.iter() {
-		let pos = cell.0;
-		match meshes.get_mut(&mesh_handle.0) {
-			Some(mesh) => *mesh = cell_mesh(&grid, &pos, RenderAssetUsages::MAIN_WORLD),
-			None => warn_once!("Failed to update selection mesh for cell {:?} because its mesh asset could not be found.", pos),
+	if grid.is_changed() {
+		info_once!("Grid update!");
+		for (cell, mesh_handle) in query.iter() {
+			let pos = cell.0;
+			match meshes.get_mut(&mesh_handle.0) {
+				Some(mesh) => *mesh = cell_sharp_mesh(&grid, &pos, RenderAssetUsages::all()),
+				None => warn_once!("Failed to update selection mesh for cell {:?} because its mesh asset could not be found.", pos),
+			}
 		}
 	}
 }
