@@ -29,11 +29,12 @@ pub fn setup(
 			Transform::from_xyz(x, 0., z),
 		))
 		.observe(|
-			trigger: Trigger<Pointer<Click>>,
+			trigger: Trigger<Pointer<Pressed>>,
 			cells: Query<&CellHex>,
 			mut grid: ResMut<Grid>,
-			mut query: Query<(&CellHex, &mut Mesh3d, &mut Aabb)>,
+			mut query: Query<(&CellHex, &mut Mesh3d, &mut MeshMaterial3d<StandardMaterial>, &mut Aabb)>,
 			mut meshes: ResMut<Assets<Mesh>>,
+			mut materials: ResMut<Assets<StandardMaterial>>,
 		| {
 			let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse clicked cell, but it's missing a CellHex position: {}", e); return}};
 			println!("Hex Click: {:?}", pos);
@@ -48,16 +49,8 @@ pub fn setup(
 					cell.height -= 1;
 				}
 			}
-			for (cell, mut mesh, mut aabb) in query.iter_mut() {
-				let pos = cell.0;
-				let new_mesh = cell_sharp_mesh(&grid, &pos, RenderAssetUsages::all());
-				// TODO: Remove this if mesh picking bug is fixed.
-				// Currently, the Axis-Aligned Bounding Box is
-				// not updated automatically when the mesh changes.
-				// https://github.com/bevyengine/bevy/issues/18221#issuecomment-2746183172
-				*aabb = new_mesh.compute_aabb().unwrap();
-				*mesh = Mesh3d(meshes.add(new_mesh));
-			}
+			update_meshes(&grid, query.iter_mut().map(|(cell, mesh, _, aabb)| (cell, mesh, aabb)), &mut meshes);
+			update_materials(&grid, query.iter_mut().map(|(cell, _, material, _)| (cell, material)), &mut materials);
 		})
 		.observe(|
 			trigger: Trigger<Pointer<Over>>, // Mouse hovering.
@@ -81,5 +74,32 @@ pub fn setup(
 				cursor.hover_cell = None;
 			}
 		});
+	}
+}
+
+pub fn update_meshes<'a>( // This is not a system.
+	grid: &ResMut<Grid>,
+	query_iter: impl Iterator<Item = (&'a CellHex, Mut<'a, Mesh3d>, Mut<'a, Aabb>)>,
+	meshes: &mut ResMut<Assets<Mesh>>,
+) {
+	for (cell, mut mesh, mut aabb) in query_iter {
+		let pos = cell.0;
+		let new_mesh = cell_sharp_mesh(&grid, &pos, RenderAssetUsages::all());
+		// TODO: Remove this if mesh picking bug is fixed.
+		// Currently, the Axis-Aligned Bounding Box is
+		// not updated automatically when the mesh changes.
+		// https://github.com/bevyengine/bevy/issues/18221#issuecomment-2746183172
+		*aabb = new_mesh.compute_aabb().unwrap();
+		*mesh = Mesh3d(meshes.add(new_mesh));
+	}
+}
+
+pub fn update_materials<'a>( // This is also not a system.
+	grid: &ResMut<Grid>,
+	query_iter: impl Iterator<Item = (&'a CellHex, Mut<'a, MeshMaterial3d<StandardMaterial>>)>,
+	materials: &mut ResMut<Assets<StandardMaterial>>,
+) {
+	for (cell, mut material) in query_iter {
+		
 	}
 }
