@@ -22,7 +22,7 @@ fn temp(
 	grid: Res<grid::Grid>,
 ) {
 	for (pos, _) in grid.cells.iter() {
-		crate::util::hex_gizmo::column(
+		crate::util::hex_gizmo::column_sloped(
 			&mut gizmos,
 			pos,
 			&grid,

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::util::hex_gizmo::column;
+use crate::util::hex_gizmo::column_sloped;
 use crate::game::placement::{grid::Grid, cursor::Cursor};
 
 pub fn update(
@@ -10,7 +10,7 @@ pub fn update(
 ) {
 	let (pos, _) = match &cursor.hover_cell {Some(hover_cell) => hover_cell, None => return};
 	
-	column(
+	column_sloped(
 		&mut gizmos,
 		pos,
 		&grid,

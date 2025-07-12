@@ -1,4 +1,7 @@
-use bevy::{prelude::*, render::render_asset::RenderAssetUsages};
+use bevy::{
+	prelude::*,
+	render::{render_asset::RenderAssetUsages, primitives::Aabb, mesh::MeshAabb}
+};
 use hexx::Hex;
 
 use crate::util::{
@@ -72,16 +75,19 @@ pub fn setup(
 pub fn update(
 	mut meshes: ResMut<Assets<Mesh>>,
 	grid: Res<Grid>,
-	query: Query<(&CellHex, &Mesh3d)>,
+	mut query: Query<(&CellHex, &mut Mesh3d, &mut Aabb)>,
 ) {
 	if grid.is_changed() {
 		info_once!("Grid update!");
-		for (cell, mesh_handle) in query.iter() {
+		for (cell, mut mesh, mut aabb) in query.iter_mut() {
 			let pos = cell.0;
-			match meshes.get_mut(&mesh_handle.0) {
-				Some(mesh) => *mesh = cell_sharp_mesh(&grid, &pos, RenderAssetUsages::all()),
-				None => warn_once!("Failed to update selection mesh for cell {:?} because its mesh asset could not be found.", pos),
-			}
+			let new_mesh = cell_sharp_mesh(&grid, &pos, RenderAssetUsages::all());
+			// TODO: Remove this if mesh picking bug is fixed.
+			// Currently, the Axis-Aligned Bounding Box is
+			// not updated automatically when the mesh changes.
+			// https://github.com/bevyengine/bevy/issues/18221#issuecomment-2746183172
+			*aabb = new_mesh.compute_aabb().unwrap();
+			*mesh = Mesh3d(meshes.add(new_mesh));
 		}
 	}
 }

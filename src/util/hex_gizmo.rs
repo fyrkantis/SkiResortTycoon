@@ -4,6 +4,8 @@ use hexx::Hex;
 use crate::util::hex::{axial_to_xz, HexCorner, corner_height};
 use crate::game::placement::grid::Grid;
 
+#[allow(dead_code)] // TODO: Remove this function if still unused.
+/// Highlights a column without taking slope into account.
 pub fn column_level<Config: GizmoConfigGroup, Clear: 'static + Send + Sync>( // TODO: Clean up. Idk what this is, GizmoBuffer needs it.
 	gizmos: &mut GizmoBuffer<Config, Clear>,
 	pos: &Hex,
@@ -28,7 +30,8 @@ pub fn column_level<Config: GizmoConfigGroup, Clear: 'static + Send + Sync>( // 
 	}
 }
 
-pub fn column<Config: GizmoConfigGroup, Clear: 'static + Send + Sync>( // TODO: Clean up. Idk what this is, GizmoBuffer needs it.
+/// Highlights a column with lines following the edges of a cell_sharp_mesh exactly.
+pub fn column_sloped<Config: GizmoConfigGroup, Clear: 'static + Send + Sync>( // TODO: Clean up. Idk what this is, GizmoBuffer needs it.
 	gizmos: &mut GizmoBuffer<Config, Clear>,
 	pos: &Hex,
 	grid: &Grid,
