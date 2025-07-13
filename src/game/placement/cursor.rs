@@ -7,7 +7,9 @@ use crate::game::item::Item;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub enum Tool {
-	Place,
+	Item,
+	Surface,
+	Terrain,
 	Remove,
 }
 

@@ -14,8 +14,6 @@ pub struct GridCell {
 	pub surface: Surface,
 	pub item: Option<Item>,
 }
-// TODO: Use const fn default when available. https://github.com/rust-lang/rust/issues/67792
-pub const fn empty_cell(height: u16) -> GridCell {GridCell {height: height, surface: Surface::Normal, item: None}}
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct WorldGenSettings {
@@ -40,6 +38,8 @@ pub struct Grid {
 	pub settings: WorldGenSettings
 }
 impl Grid {
+	pub const WATER_HEIGHT: f64 = -3.;
+	
 	/// Generates a new grid with set width and length.
 	/// It is recommended to use an odd number for width to avoid sharp corners.
 	pub fn new(width: u16, length: u16, settings: WorldGenSettings) -> Self {
@@ -55,7 +55,12 @@ impl Grid {
 				let height = perlin.get([x as f64 / settings.peak_width, z as f64 / settings.peak_width])
 				* settings.peak_height + (z as f64 / max_z) * settings.slope_height;
 
-				cells.insert(pos_axial, empty_cell(height as u16));
+				cells.insert(pos_axial, GridCell {
+					height: height as u16,
+					surface: if height < Grid::WATER_HEIGHT {Surface::Water} else {Surface::Normal},
+					..Default::default()
+				});
+				
 			}
 		}
 		Grid {

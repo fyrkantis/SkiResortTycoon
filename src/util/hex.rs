@@ -99,6 +99,17 @@ pub fn corner_height(grid: &Grid, pos: &Hex, corner: HexCorner) -> f32 {
 	}
 }
 
+pub fn cell_slope(grid: &Grid, pos: &Hex) -> u16 {
+	let height = grid.cells.get(pos).unwrap().height as i32;
+	let deltas: Vec<i32> = HexEdge::get_array()
+	.iter()
+	.map(|edge| match grid.cells.get(&(*pos + edge.direction())) {Some(cell) => cell.height as i32 - height, None => 0})
+	.collect();
+	let min = deltas.iter().min().unwrap();
+	let max = deltas.iter().max().unwrap();
+	(max - min).abs() as u16
+}
+
 /// Converts axial hex coordinates to xz pixel coordinates.
 pub const fn axial_to_xz(pos: &Hex) -> [f32; 2] {
 	[pos.x as f32 * 3. / 2., pos.x as f32 * SQRT_3 / 2. + pos.y as f32 * SQRT_3]
