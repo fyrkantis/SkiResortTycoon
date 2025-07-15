@@ -1,13 +1,13 @@
 use bevy::prelude::*;
 use bevy_egui::*;
 
-use crate::game::item::ItemList;
+use crate::game::item::Items;
 use crate::game::placement::cursor::{Cursor, Tool};
 
 pub fn ui_system(
 	mut contexts: EguiContexts,
 	mut cursor: ResMut<Cursor>,
-	items: Res<ItemList>,
+	items: Res<Items>,
 ) {
 	egui::Window::new("Build")
 	.collapsible(false)
@@ -23,7 +23,7 @@ pub fn ui_system(
 		if cursor.tool == Some(Tool::Item) {
 			ui.label("Items");
 			ui.horizontal(|ui| {
-				for item in items.0.iter() {
+				for (_, item) in items.0.iter() {
 					let mut frame = egui::Frame::new()
 					.fill(ui.visuals().widgets.open.bg_fill)
 					.stroke(ui.visuals().widgets.open.bg_stroke)
@@ -41,9 +41,9 @@ pub fn ui_system(
 						let response = ui.allocate_rect(space.interact_rect, egui::Sense::click());
 						if response.clicked() {
 							println!("Clicked {:?}", item);
-							cursor.selected_item = Some(*item);
+							cursor.selected_item_id = Some(item.id);
 						}
-						if cursor.selected_item == Some(*item) {
+						if cursor.selected_item_id == Some(item.id) {
 							frame.frame.fill = ui.visuals().widgets.active.bg_fill;
 							frame.frame.stroke = ui.visuals().widgets.active.bg_stroke;
 							frame.frame.corner_radius = ui.visuals().widgets.active.corner_radius;

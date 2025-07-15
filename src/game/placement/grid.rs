@@ -6,13 +6,12 @@ use rand::prelude::*;
 
 use crate::util::hex::{axial_to_xz, offset_to_axial};
 use crate::game::surface::Surface;
-use crate::game::item::Item;
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct GridCell {
 	pub height: u16,
 	pub surface: Surface,
-	pub item: Option<Item>,
+	pub item_id: Option<u16>,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]

@@ -1,6 +1,7 @@
 use bevy::{
 	prelude::*,
-	render::{render_asset::RenderAssetUsages, primitives::Aabb, mesh::MeshAabb}
+	render::{render_asset::RenderAssetUsages, primitives::Aabb, mesh::MeshAabb},
+	scene::SceneSpawner,
 };
 use hexx::Hex;
 
@@ -12,6 +13,7 @@ use crate::game::{
 	placement::{grid::Grid, cursor::{Cursor, Tool}},
 	materials::Materials,
 	surface::Surface,
+	item::Items,
 };
 
 #[derive(Component, Debug, PartialEq, Eq, Clone, Copy, Hash)]
@@ -32,80 +34,99 @@ pub fn setup(
 			MeshMaterial3d(cell_material(&materials, &grid, pos).clone()),
 			Transform::from_xyz(x, 0., z),
 		))
-		.observe(|
-			trigger: Trigger<Pointer<Pressed>>,
-			cells: Query<&CellHex>,
-			mut grid: ResMut<Grid>,
-			cursor: Res<Cursor>,
-			mut query_meshes: Query<(&CellHex, &mut Mesh3d, &mut Aabb)>,
-			mut query_materials: Query<(&CellHex, &mut MeshMaterial3d<StandardMaterial>)>,
-			mut meshes: ResMut<Assets<Mesh>>,
-			materials: Res<Materials>,
-		| {
-			let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse clicked cell, but it's missing a CellHex position: {}", e); return}};
-			println!("Hex Click: {:?}", pos);
-
-			let cell = match grid.cells.get_mut(&pos) {Some(cell) => cell, None => {error!("Mouse clicked cell, but it's CellHex position could not be found in grid."); return}};
-
-			if cursor.tool == Some(Tool::Terrain) {
-				if trigger.button == PointerButton::Primary {
-					cell.height += 1;
-					update_meshes(query_meshes, &mut meshes, &grid);
-					update_materials(query_materials, &materials, &grid);
-				} else if trigger.button == PointerButton::Secondary {
-					if cell.height <= 0 {
-						warn!("Can't lower cell {:?} because it's already at height {}.", pos, cell.height);
-					} else {
-						cell.height -= 1;
-						update_meshes(query_meshes, &mut meshes, &grid);
-						update_materials(query_materials, &materials, &grid);
-					}
-				}
-			} else if cursor.tool == Some(Tool::Surface) {
-				if trigger.button == PointerButton::Primary {
-					if cell.surface != Surface::Normal {
-						warn!("Can't add piste because the surface is not normal.");
-					} else {
-						cell.surface = Surface::Piste;
-						update_materials(query_materials, &materials, &grid)
-					}
-				} else if trigger.button == PointerButton::Secondary {
-					if cell.surface != Surface::Piste {
-						warn!("Can't remove piste because the surface is already not piste.");
-					} else {
-						cell.surface = Surface::Normal;
-						update_materials(query_materials, &materials, &grid);
-					}
-				}
-			}
-		})
-		.observe(|
-			trigger: Trigger<Pointer<Over>>, // Mouse hovering.
-			cells: Query<&CellHex>,
-			grid: Res<Grid>,
-			mut cursor: ResMut<Cursor>,
-		| {
-			
-			let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellHex position: {}", e); return}};
-			let cell = match grid.cells.get(&pos) {Some(cell) => cell, None => {error!("Mouse hovered over cell, but it's CellHex position could not be found in grid."); return}};
-			cursor.hover_cell = Some((pos, *cell));
-		})
-		.observe(|
-			trigger: Trigger<Pointer<Out>>, // Mouse no longer hovering.
-			cells: Query<&CellHex>,
-			mut cursor: ResMut<Cursor>,
-		| {
-			let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellHex position: {}", e); return}};
-			let current_pos = match cursor.hover_cell {Some((current_pos, _current_cursor)) => current_pos, None => {return}};
-			if current_pos == pos {
-				cursor.hover_cell = None;
-			}
-		});
+		.observe(handle_click)
+		.observe(handle_hover_start)
+		.observe(handle_hover_end);
 	}
 }
 
-/// This is not a system.
-pub fn update_meshes(
+fn handle_hover_start(
+	trigger: Trigger<Pointer<Over>>,
+	cells: Query<&CellHex>,
+	grid: Res<Grid>,
+	mut cursor: ResMut<Cursor>,
+) {
+	let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellHex position: {}", e); return}};
+	let cell = match grid.cells.get(&pos) {Some(cell) => cell, None => {error!("Mouse hovered over cell, but it's CellHex position could not be found in grid."); return}};
+	cursor.hover_cell = Some((pos, *cell));
+}
+
+fn handle_hover_end(
+	trigger: Trigger<Pointer<Out>>,
+	cells: Query<&CellHex>,
+	mut cursor: ResMut<Cursor>,
+) {
+	let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellHex position: {}", e); return}};
+	let current_pos = match cursor.hover_cell {Some((current_pos, _current_cursor)) => current_pos, None => {return}};
+	if current_pos == pos {
+		cursor.hover_cell = None;
+	}
+}
+
+fn handle_click(
+	trigger: Trigger<Pointer<Pressed>>,
+	mut commands: Commands,
+	mut meshes: ResMut<Assets<Mesh>>,
+	materials: Res<Materials>,
+	items: Res<Items>,
+	mut query_meshes: Query<(&CellHex, &mut Mesh3d, &mut Aabb)>,
+	mut query_materials: Query<(&CellHex, &mut MeshMaterial3d<StandardMaterial>)>,
+	cells: Query<&CellHex>,
+	mut grid: ResMut<Grid>,
+	cursor: Res<Cursor>,
+) {
+	let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse clicked cell, but it's missing a CellHex position: {}", e); return}};
+	println!("Hex Click: {:?}", pos);
+
+	let cell = match grid.cells.get_mut(&pos) {Some(cell) => cell, None => {error!("Mouse clicked cell, but it's CellHex position could not be found in grid."); return}};
+
+	if cursor.tool == Some(Tool::Terrain) {
+		if trigger.button == PointerButton::Primary {
+			cell.height += 1;
+			update_meshes(query_meshes, &mut meshes, &grid);
+			update_materials(query_materials, &materials, &grid);
+		} else if trigger.button == PointerButton::Secondary {
+			if cell.height <= 0 {
+				warn!("Can't lower cell {:?} because it's already at height {}.", pos, cell.height);
+			} else {
+				cell.height -= 1;
+				update_meshes(query_meshes, &mut meshes, &grid);
+				update_materials(query_materials, &materials, &grid);
+			}
+		}
+	} else if cursor.tool == Some(Tool::Surface) {
+		if trigger.button == PointerButton::Primary {
+			if cell.surface != Surface::Normal {
+				warn!("Can't add piste because the surface is not normal.");
+			} else {
+				cell.surface = Surface::Piste;
+				update_materials(query_materials, &materials, &grid)
+			}
+		} else if trigger.button == PointerButton::Secondary {
+			if cell.surface != Surface::Piste {
+				warn!("Can't remove piste because the surface is already not piste.");
+			} else {
+				cell.surface = Surface::Normal;
+				update_materials(query_materials, &materials, &grid);
+			}
+		}
+	} else if cursor.tool == Some(Tool::Item) {
+		let item_id = match cursor.selected_item_id {Some(id) => id, None => {warn!("Can't place because no item is selected."); return}};
+		let item = match items.0.get(&item_id) {Some(item) => item, None => {error!("Can't place because selected item ID is invalid."); return}};
+		if cell.item_id != None {warn!("Can't place because cell {:?} is already occupied: {:?}", pos, cell); return}
+		cell.item_id = Some(item_id);
+		let [x, z] = axial_to_xz(&pos);
+		commands.spawn((
+			SceneRoot(item.scene.clone()),
+			Transform {
+				translation: Vec3::new(x, cell.height as f32, z),
+				..default()
+			},
+		));
+	}
+}
+
+fn update_meshes(
 	mut query: Query<(&CellHex, &mut Mesh3d, &mut Aabb)>,
 	meshes: &mut ResMut<Assets<Mesh>>,
 	grid: &Grid,
@@ -122,8 +143,7 @@ pub fn update_meshes(
 	}
 }
 
-/// This is also not a system.
-pub fn update_materials(
+fn update_materials(
 	mut query: Query<(&CellHex, &mut MeshMaterial3d<StandardMaterial>)>,
 	materials: &Materials,
 	grid: &Grid,
@@ -140,7 +160,7 @@ pub fn update_materials(
 pub const SNOW_MAX_SLOPE: u16 = 3;
 pub const DIRT_MAX_SLOPE: u16 = 4;
 
- fn cell_material<'a>(materials: &'a Materials, grid: &Grid, pos: &Hex) -> &'a Handle<StandardMaterial> {
+fn cell_material<'a>(materials: &'a Materials, grid: &Grid, pos: &Hex) -> &'a Handle<StandardMaterial> {
 	let cell = grid.cells.get(pos).unwrap();
 	match cell.surface {
 		Surface::Piste => &materials.piste,

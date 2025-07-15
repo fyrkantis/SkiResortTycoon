@@ -7,6 +7,9 @@ pub struct Materials {
 	pub water: Handle<StandardMaterial>,
 	pub dirt: Handle<StandardMaterial>,
 	pub rock: Handle<StandardMaterial>,
+
+	pub red: Handle<StandardMaterial>,
+	pub blue: Handle<StandardMaterial>,
 }
 
 pub fn setup(
@@ -32,5 +35,8 @@ pub fn setup(
 			metallic: 0.1,
 			..Default::default()
 		}),
+
+		red: materials.add(Color::srgb(1., 0., 0.)),
+		blue: materials.add(Color::srgb(0., 0., 1.)),
 	})
 }
