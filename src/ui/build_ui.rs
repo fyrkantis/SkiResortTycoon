@@ -40,7 +40,6 @@ pub fn ui_system(
 						let space = frame.allocate_space(ui);
 						let response = ui.allocate_rect(space.interact_rect, egui::Sense::click());
 						if response.clicked() {
-							println!("Clicked {:?}", item);
 							cursor.selected_item_id = Some(item.id);
 						}
 						if cursor.selected_item_id == Some(item.id) {

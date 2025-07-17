@@ -1,0 +1,125 @@
+use bevy::{
+	prelude::*,
+	render::{render_asset::RenderAssetUsages, primitives::Aabb, mesh::MeshAabb},
+};
+use hexx::Hex;
+
+use crate::util::{
+	hex::{axial_to_xz, cell_slope},
+	hex_mesh::cell_sharp_mesh,
+	hex_gizmo::column_sloped,
+};
+use crate::game::{
+	placement::{
+		cursor::{Cursor, Tool},
+		grid::{Grid, CellPos, CellMesh},
+		grid_update::GridSystems,
+		item_update::ItemSystems,
+		gizmo_update::GizmoSystems,
+	},
+	materials::{Materials, cell_material},
+	surface::Surface,
+	item::{Item, Items},
+};
+
+pub fn handle_hover_start(
+	trigger: Trigger<Pointer<Over>>,
+	mut commands: Commands,
+	gizmo_systems: Res<GizmoSystems>,
+	mut cursor: ResMut<Cursor>,
+	grid: Res<Grid>,
+	cells: Query<&CellPos, With<CellMesh>>,
+) {
+	let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellPos position: {}", e); return}};
+	let cell = match grid.cells.get(&pos) {Some(cell) => cell, None => {error!("Mouse hovered over cell, but it's CellPos position could not be found in grid."); return}};
+	cursor.hover_cell = Some((pos, *cell));
+
+	//let (mut gizmo_pos, gizmo) = hover_gizmo.into_inner();
+	//gizmo_pos.0 = Some(pos);
+	//commands.run_system(gizmo_systems.set_hover_gizmo);
+}
+
+pub fn handle_hover_end(
+	trigger: Trigger<Pointer<Out>>,
+	mut commands: Commands,
+	gizmo_systems: Res<GizmoSystems>,
+	mut cursor: ResMut<Cursor>,
+	grid: Res<Grid>,
+	cells: Query<&CellPos, With<CellMesh>>,
+) {
+	let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellPos position: {}", e); return}};
+	let current_pos = match cursor.hover_cell {Some((current_pos, _current_cursor)) => current_pos, None => {return}};
+	if current_pos == pos {
+		cursor.hover_cell = None;
+	}
+	/*let (mut gizmo_pos, _gizmo) = hover_gizmo.into_inner();
+	if gizmo_pos.0 == Some(pos) {
+		gizmo_pos.0 = None;
+		update_hover_gizmo(&grid, gizmo_assets, (&gizmo_pos, gizmo))
+	}
+	commands.run(gizmo_systems.remove_hover_gizmo);*/
+}
+
+pub fn handle_click(
+	trigger: Trigger<Pointer<Pressed>>,
+	mut commands: Commands,
+	grid_systems: Res<GridSystems>,
+	item_systems: Res<ItemSystems>,
+	gizmo_systems: Res<GizmoSystems>,
+	cursor: Res<Cursor>,
+	items: Res<Items>,
+	mut grid: ResMut<Grid>,
+	cells: Query<&CellPos, With<CellMesh>>,
+) {
+	let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse clicked cell, but it's missing an entity with CellPos and CellMesh components: {}", e); return}};
+	let cell = match grid.cells.get_mut(&pos) {Some(cell) => cell, None => {error!("Mouse clicked cell, but it's CellPos position could not be found in grid."); return}};
+	
+	if cursor.tool == Some(Tool::Terrain) {
+		if trigger.button == PointerButton::Primary {
+			cell.height += 1;
+			commands.run_system(grid_systems.update_meshes);
+			commands.run_system(grid_systems.update_materials);
+			commands.run_system(item_systems.update_item_heights);
+			commands.run_system(gizmo_systems.update_hover_gizmo);
+		} else if trigger.button == PointerButton::Secondary {
+			if cell.height <= 0 {
+				warn!("Can't lower cell {:?} because it's already at height {}.", pos, cell.height);
+			} else {
+				cell.height -= 1;
+				commands.run_system(grid_systems.update_meshes);
+				commands.run_system(grid_systems.update_materials);
+				commands.run_system(item_systems.update_item_heights);
+				commands.run_system(gizmo_systems.update_hover_gizmo);
+			}
+		}
+	} else if cursor.tool == Some(Tool::Surface) {
+		if trigger.button == PointerButton::Primary {
+			if cell.surface != Surface::Normal {
+				warn!("Can't add piste because the surface is not normal.");
+			} else {
+				cell.surface = Surface::Piste;
+				commands.run_system(grid_systems.update_materials);
+			}
+		} else if trigger.button == PointerButton::Secondary {
+			if cell.surface != Surface::Piste {
+				warn!("Can't remove piste because the surface is already not piste.");
+			} else {
+				cell.surface = Surface::Normal;
+				commands.run_system(grid_systems.update_materials);
+			}
+		}
+	} else if cursor.tool == Some(Tool::Item) {
+		if trigger.button == PointerButton::Primary {
+			let item_id = match cursor.selected_item_id {Some(id) => id, None => {warn!("Can't place because no item is selected."); return}};
+			if cell.item_id != None {warn!("Can't place because cell {:?} is already occupied: {:?}", pos, cell); return}
+			cell.item_id = Some(item_id);
+			//spawn_item(&mut commands, item_id, pos, cell.height);
+		}
+	} else if cursor.tool == Some(Tool::Remove) {
+		if trigger.button == PointerButton::Primary {
+			if cell.item_id != None {warn!("Can't remove item because cell {:?} is already empty", pos); return};
+			cell.item_id = None;
+			//despawn_item();
+		}
+	}
+}

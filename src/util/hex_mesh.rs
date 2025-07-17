@@ -96,7 +96,7 @@ pub fn mountain_fuzzy_mesh(grid: &Grid, asset_usage: RenderAssetUsages) -> Mesh 
 	let mut vertices: Vec<Vec3> = Vec::new();
 	let mut vertices_count: u16 = 0;
 	let mut triangles: Vec<u16> = Vec::new();
-	for (pos, cell) in grid.cells.iter() {
+	for (pos, _cell) in grid.cells.iter() {
 		let center_index = vertices_count;
 		vertices.extend(cell_fuzzy(grid, pos, true));
 		vertices_count += 7;
@@ -126,7 +126,7 @@ pub fn mountain_smooth_mesh(grid: &Grid, asset_usage: RenderAssetUsages) -> Mesh
 		corner_vertex_indices: &mut [HashMap<Hex, u16>; 2]
 	| -> u16 {
 		let map_index = if corner.is_even() {0} else {1};
-		let [edge_1, edge_2] = corner.neighbor_edges();
+		let [edge_1, _edge_2] = corner.neighbor_edges();
 		let corner_pos = center_pos + edge_1.direction();
 		match corner_vertex_indices[map_index].get(&corner_pos) {
 			Some(corner_index) => *corner_index, // This edge vertex already exists.

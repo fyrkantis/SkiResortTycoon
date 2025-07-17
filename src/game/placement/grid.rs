@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use bevy::prelude::*;
 use hexx::Hex;
 use noise::{Perlin, NoiseFn};
-use rand::prelude::*;
+use rand::{prelude::*, random_bool};
 
 use crate::util::hex::{axial_to_xz, offset_to_axial};
 use crate::game::surface::Surface;
@@ -50,13 +50,20 @@ impl Grid {
 			for row in 0..length as i32 + (col % 2) { // Adds one extra row every other column (avoids sharp corners.
 				let pos_axial = offset_to_axial(col, row);
 				
-				let [x, z] = axial_to_xz(&pos_axial); // NOTE: xz are pixel coordinates, not hexagonal.
+				let [x, z] = axial_to_xz(&pos_axial);
 				let height = perlin.get([x as f64 / settings.peak_width, z as f64 / settings.peak_width])
 				* settings.peak_height + (z as f64 / max_z) * settings.slope_height;
 
+				// Add water if height is low enough.
+				let surface = if height < Grid::WATER_HEIGHT {Surface::Water} else {Surface::Normal};
+
+				// Add tree if height + randomness is high enough.
+				let item_id = if surface != Surface::Water && random_bool((1. - height / (settings.peak_height + settings.slope_height)).clamp(0., 1.)) {Some(1)} else {None};
+
 				cells.insert(pos_axial, GridCell {
 					height: height as u16,
-					surface: if height < Grid::WATER_HEIGHT {Surface::Water} else {Surface::Normal},
+					surface: surface,
+					item_id: item_id,
 					..Default::default()
 				});
 				
@@ -70,3 +77,15 @@ impl Grid {
 		}
 	}
 }
+
+#[derive(Component, Debug, Clone, Copy)]
+/// Component for the visible cell of a mountain.
+pub struct CellMesh;
+
+#[derive(Component, Debug, PartialEq, Eq, Clone, Copy, Hash)]
+/// Component for a placed item entity, with attached item ID.
+pub struct CellItem(pub u16);
+
+#[derive(Component, Debug, PartialEq, Eq, Clone, Copy, Hash)]
+/// Component for the axial position that corresponds to this mesh/item.
+pub struct CellPos(pub Hex);
