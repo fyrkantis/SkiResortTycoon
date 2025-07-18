@@ -33,10 +33,8 @@ pub fn handle_hover_start(
 	let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellPos position: {}", e); return}};
 	let cell = match grid.cells.get(&pos) {Some(cell) => cell, None => {error!("Mouse hovered over cell, but it's CellPos position could not be found in grid."); return}};
 	cursor.hover_cell = Some((pos, *cell));
-
-	//let (mut gizmo_pos, gizmo) = hover_gizmo.into_inner();
-	//gizmo_pos.0 = Some(pos);
-	//commands.run_system(gizmo_systems.set_hover_gizmo);
+	
+	commands.run_system_with(gizmo_systems.set_hover_gizmo, pos);
 }
 
 pub fn handle_hover_end(
@@ -44,7 +42,6 @@ pub fn handle_hover_end(
 	mut commands: Commands,
 	gizmo_systems: Res<GizmoSystems>,
 	mut cursor: ResMut<Cursor>,
-	grid: Res<Grid>,
 	cells: Query<&CellPos, With<CellMesh>>,
 ) {
 	let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellPos position: {}", e); return}};
@@ -52,12 +49,7 @@ pub fn handle_hover_end(
 	if current_pos == pos {
 		cursor.hover_cell = None;
 	}
-	/*let (mut gizmo_pos, _gizmo) = hover_gizmo.into_inner();
-	if gizmo_pos.0 == Some(pos) {
-		gizmo_pos.0 = None;
-		update_hover_gizmo(&grid, gizmo_assets, (&gizmo_pos, gizmo))
-	}
-	commands.run(gizmo_systems.remove_hover_gizmo);*/
+	commands.run_system_with(gizmo_systems.remove_hover_gizmo, pos);
 }
 
 pub fn handle_click(

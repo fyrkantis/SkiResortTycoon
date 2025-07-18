@@ -11,7 +11,7 @@ use crate::game::{
 };
 
 #[derive(Resource, Debug, Clone, Copy)]
-pub struct GridSystems {
+pub struct GridSystems { // TODO: Find a more efficient way to call these systems. One-shot systems are single-thread.
 	pub update_meshes: SystemId,
 	pub update_materials: SystemId,
 }
