@@ -1,13 +1,10 @@
-use bevy::{
-	prelude::*,
-	ecs::system::SystemId,
-};
+use bevy::prelude::*;
 use hexx::Hex;
 
 use crate::util::hex::axial_to_xz;
 use crate::game::{
 	placement::grid::{Grid, CellPos, CellItem},
-	item::{Item, Items},
+	item::Items,
 };
 
 pub struct ItemUpdatePlugin;
@@ -15,6 +12,7 @@ impl Plugin for ItemUpdatePlugin {
 	fn build(&self, app: &mut App) {
 		app.add_observer(update_item_heights);
 		app.add_observer(spawn_item);
+		app.add_observer(spawn_items);
 		app.add_observer(despawn_item);
 	}
 }

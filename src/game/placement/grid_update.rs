@@ -1,6 +1,5 @@
 use bevy::{
 	prelude::*,
-	ecs::system::SystemId,
 	render::{render_asset::RenderAssetUsages, primitives::Aabb, mesh::MeshAabb},
 };
 
@@ -41,7 +40,7 @@ fn update_meshes(
 #[derive(Event, Debug, Clone, Copy)]
 pub struct UpdateMaterials;
 fn update_materials(
-	_trigger: Trigger<UpdateMeshes>,
+	_trigger: Trigger<UpdateMaterials>,
 	materials: Res<Materials>,
 	grid: Res<Grid>,
 	mut query: Query<(&CellPos, &mut MeshMaterial3d<StandardMaterial>), With<CellMesh>>,

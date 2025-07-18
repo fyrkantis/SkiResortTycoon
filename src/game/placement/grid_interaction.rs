@@ -1,14 +1,5 @@
-use bevy::{
-	prelude::*,
-	render::{render_asset::RenderAssetUsages, primitives::Aabb, mesh::MeshAabb},
-};
-use hexx::Hex;
+use bevy::prelude::*;
 
-use crate::util::{
-	hex::{axial_to_xz, cell_slope},
-	hex_mesh::cell_sharp_mesh,
-	hex_gizmo::column_sloped,
-};
 use crate::game::{
 	placement::{
 		cursor::{Cursor, Tool},
@@ -17,9 +8,7 @@ use crate::game::{
 		item_update::{UpdateItemHeights, SpawnItem, ItemSpawn, DespawnItem},
 		gizmo_update::{UpdateHoverGizmo, SetHoverGizmo, RemoveHoverGizmo},
 	},
-	materials::{Materials, cell_material},
 	surface::Surface,
-	item::{Item, Items},
 };
 
 pub fn handle_hover_start(
@@ -54,7 +43,6 @@ pub fn handle_click(
 	trigger: Trigger<Pointer<Pressed>>,
 	mut commands: Commands,
 	cursor: Res<Cursor>,
-	items: Res<Items>,
 	mut grid: ResMut<Grid>,
 	cells: Query<&CellPos, With<CellMesh>>,
 ) {
@@ -96,6 +84,7 @@ pub fn handle_click(
 				commands.trigger(UpdateMaterials);
 			}
 		}
+		commands.trigger(UpdateMaterials);
 	} else if cursor.tool == Some(Tool::Item) {
 		if trigger.button == PointerButton::Primary {
 			let item_id = match cursor.selected_item_id {Some(id) => id, None => {warn!("Can't place because no item is selected."); return}};

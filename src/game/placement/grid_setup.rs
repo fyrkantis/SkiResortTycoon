@@ -14,13 +14,11 @@ use crate::game::{
 		item_update::{ItemSpawn, SpawnItems},
 	},
 	materials::{Materials, cell_material},
-	item::Items,
 };
 
 pub fn setup(
 	mut commands: Commands,
 	mut meshes: ResMut<Assets<Mesh>>,
-	mut gizmo_assets: ResMut<Assets<GizmoAsset>>,
 	materials: Res<Materials>,
 	grid: Res<Grid>,
 ) {

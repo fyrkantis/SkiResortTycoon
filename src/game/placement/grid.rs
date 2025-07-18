@@ -58,7 +58,7 @@ impl Grid {
 				let surface = if height < Grid::WATER_HEIGHT {Surface::Water} else {Surface::Normal};
 
 				// Add tree if height + randomness is high enough.
-				let item_id = if surface != Surface::Water && random_bool((1. - height / (settings.peak_height + settings.slope_height)).clamp(0., 1.)) {Some(1)} else {None};
+				let item_id = if surface != Surface::Water && random_bool((0.5 - height / (2. * (settings.peak_height + settings.slope_height))).clamp(0., 1.)) {Some(1)} else {None};
 
 				cells.insert(pos_axial, GridCell {
 					height: height as u16,

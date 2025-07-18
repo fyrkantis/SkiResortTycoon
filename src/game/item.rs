@@ -22,7 +22,8 @@ impl Hash for Item {fn hash<H: Hasher>(&self, state: &mut H) {self.id.hash(state
 #[derive(Resource, Debug, Clone)]
 pub struct Items(pub HashMap<u16, Item>);
 
-pub fn load_items_system(
+/// Loads all item scenes.
+pub fn setup(
 	mut commands: Commands,
 	mut scene_assets: ResMut<Assets<Scene>>,
 	mut mesh_assets: ResMut<Assets<Mesh>>,

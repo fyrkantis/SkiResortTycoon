@@ -1,7 +1,4 @@
-use bevy::{
-	prelude::*,
-	ecs::system::SystemId,
-};
+use bevy::prelude::*;
 use hexx::Hex;
 
 use crate::util::{
@@ -26,7 +23,7 @@ pub struct HoverGizmo(Option<Hex>);
 
 pub fn setup(
 	mut commands: Commands,
-	mut gizmo_assets: ResMut<Assets<GizmoAsset>>,
+	gizmo_assets: ResMut<Assets<GizmoAsset>>,
 ) {
 	commands.spawn((
 		HoverGizmo(None),
@@ -88,7 +85,7 @@ fn set_hover_gizmo(
 pub struct RemoveHoverGizmo(pub Hex);
 fn remove_hover_gizmo(
 	trigger: Trigger<RemoveHoverGizmo>,
-	mut gizmo_assets: ResMut<Assets<GizmoAsset>>,
+	gizmo_assets: ResMut<Assets<GizmoAsset>>,
 	gizmo_entity: Single<(&mut HoverGizmo, &mut Gizmo)>,
 ) {
 	let pos = trigger.0;
