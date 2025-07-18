@@ -11,23 +11,13 @@ use crate::util::{
 };
 use crate::game::placement::{grid::Grid, cursor::Cursor};
 
-#[derive(Resource, Debug, Clone, Copy)]
-pub struct GizmoSystems {
-	pub update_hover_gizmo: SystemId,
-	pub set_hover_gizmo: SystemId<In<Hex>>,
-	pub remove_hover_gizmo: SystemId<In<Hex>>,
-}
-
 pub struct GizmoUpdatePlugin;
 impl Plugin for GizmoUpdatePlugin {
 	fn build(&self, app: &mut App) {
-		let system_ids = GizmoSystems {
-			update_hover_gizmo: app.register_system(update_hover_gizmo),
-			set_hover_gizmo: app.register_system(set_hover_gizmo),
-			remove_hover_gizmo: app.register_system(remove_hover_gizmo),
-		};
-		app.insert_resource(system_ids);
 		app.add_systems(Startup, setup);
+		app.add_observer(update_hover_gizmo);
+		app.add_observer(set_hover_gizmo);
+		app.add_observer(remove_hover_gizmo);
 	}
 }
 
@@ -64,7 +54,10 @@ fn create_hover_gizmo(
 	new_gizmo
 }
 
+#[derive(Event, Debug, Clone, Copy)]
+pub struct UpdateHoverGizmo;
 fn update_hover_gizmo(
+	_trigger: Trigger<UpdateHoverGizmo>,
 	mut gizmo_assets: ResMut<Assets<GizmoAsset>>,
 	grid: Res<Grid>,
 	gizmo_entity: Single<(&HoverGizmo, &mut Gizmo)>,
@@ -76,23 +69,29 @@ fn update_hover_gizmo(
 	}
 }
 
+#[derive(Event, Debug, Clone, Copy)]
+pub struct SetHoverGizmo(pub Hex);
 fn set_hover_gizmo(
-	In(pos): In<Hex>,
+	trigger: Trigger<SetHoverGizmo>,
 	mut gizmo_assets: ResMut<Assets<GizmoAsset>>,
 	grid: Res<Grid>,
 	gizmo_entity: Single<(&mut HoverGizmo, &mut Gizmo)>,
 ) {
+	let pos = trigger.0;
 	let (mut gizmo_pos, mut gizmo) = gizmo_entity.into_inner();
 	gizmo_pos.0 = Some(pos);
 	gizmo.handle = gizmo_assets.add(create_hover_gizmo(&grid, pos));
 }
 
+#[derive(Event, Debug, Clone, Copy)]
 /// Removes the hover gizmo if it is still on input position.
+pub struct RemoveHoverGizmo(pub Hex);
 fn remove_hover_gizmo(
-	In(pos): In<Hex>,
+	trigger: Trigger<RemoveHoverGizmo>,
 	mut gizmo_assets: ResMut<Assets<GizmoAsset>>,
 	gizmo_entity: Single<(&mut HoverGizmo, &mut Gizmo)>,
 ) {
+	let pos = trigger.0;
 	let (mut gizmo_pos, mut gizmo) = gizmo_entity.into_inner();
 	if gizmo_pos.0 == Some(pos) {
 		gizmo_pos.0 = None;

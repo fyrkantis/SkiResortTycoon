@@ -10,25 +10,18 @@ use crate::game::{
 	materials::{Materials, cell_material},
 };
 
-#[derive(Resource, Debug, Clone, Copy)]
-pub struct GridSystems { // TODO: Find a more efficient way to call these systems. One-shot systems are single-thread.
-	pub update_meshes: SystemId,
-	pub update_materials: SystemId,
-}
-
 pub struct GridUpdatePlugin;
 impl Plugin for GridUpdatePlugin {
 	fn build(&self, app: &mut App) {
-		let system_ids = GridSystems {
-			update_meshes: app.register_system(update_meshes),
-			update_materials: app.register_system(update_materials),
-		};
-		app.insert_resource(system_ids);
-		
+		app.add_observer(update_meshes);
+		app.add_observer(update_materials);
 	}
 }
 
+#[derive(Event, Debug, Clone, Copy)]
+pub struct UpdateMeshes;
 fn update_meshes(
+	_trigger: Trigger<UpdateMeshes>,
 	mut meshes: ResMut<Assets<Mesh>>,
 	grid: Res<Grid>,
 	mut query: Query<(&CellPos, &mut Mesh3d, &mut Aabb), With<CellMesh>>,
@@ -45,7 +38,10 @@ fn update_meshes(
 	}
 }
 
+#[derive(Event, Debug, Clone, Copy)]
+pub struct UpdateMaterials;
 fn update_materials(
+	_trigger: Trigger<UpdateMeshes>,
 	materials: Res<Materials>,
 	grid: Res<Grid>,
 	mut query: Query<(&CellPos, &mut MeshMaterial3d<StandardMaterial>), With<CellMesh>>,
