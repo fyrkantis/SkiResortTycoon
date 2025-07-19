@@ -4,7 +4,7 @@ use bevy_egui::*;
 use crate::game::item::Items;
 use crate::game::placement::cursor::{Cursor, Tool};
 
-pub fn ui_system(
+pub fn setup(
 	mut contexts: EguiContexts,
 	mut cursor: ResMut<Cursor>,
 	items: Res<Items>,
@@ -14,13 +14,13 @@ pub fn ui_system(
 	.resizable(false)
 	.show(contexts.ctx_mut(), |ui| {
 		ui.label("Tools");
-		if ui.button("Place Item").clicked() {cursor.tool = Some(Tool::Item);}
-		if ui.button("Delete Item").clicked() {cursor.tool = Some(Tool::Remove);}
-		if ui.button("Add/remove piste").clicked() {cursor.tool = Some(Tool::Surface);}
-		if ui.button("Raise/lower terrain").clicked() {cursor.tool = Some(Tool::Terrain);}
-		if ui.button("None").clicked() {cursor.tool = None;}
+		if ui.button("Place Item").clicked() {cursor.tool = Tool::Item;}
+		if ui.button("Delete Item").clicked() {cursor.tool = Tool::Remove;}
+		if ui.button("Add/remove piste").clicked() {cursor.tool = Tool::Surface;}
+		if ui.button("Raise/lower terrain").clicked() {cursor.tool = Tool::Terrain;}
+		if ui.button("None").clicked() {cursor.tool = Tool::None;}
 
-		if cursor.tool == Some(Tool::Item) {
+		if matches!(cursor.tool, Tool::Item) {
 			ui.label("Items");
 			ui.horizontal(|ui| {
 				for (_, item) in items.0.iter() {

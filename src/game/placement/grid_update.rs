@@ -6,7 +6,7 @@ use bevy::{
 use crate::util::hex_mesh::cell_sharp_mesh;
 use crate::game::{
 	placement::grid::{Grid, CellPos, CellMesh},
-	materials::{Materials, cell_material},
+	material::{Materials, cell_material},
 };
 
 pub struct GridUpdatePlugin;

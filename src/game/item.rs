@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 use std::collections::HashMap;
 use bevy::{prelude::*, color::palettes::tailwind};
 
-use crate::game::materials::Materials;
+use crate::game::material::Materials;
 
 #[derive(Debug, Clone)]
 pub struct Item {

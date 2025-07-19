@@ -13,7 +13,7 @@ use crate::game::{
 		grid_interaction::*,
 		item_update::{ItemSpawn, SpawnItems},
 	},
-	materials::{Materials, cell_material},
+	material::{Materials, cell_material},
 };
 
 pub fn setup(
