@@ -94,9 +94,9 @@ pub fn handle_click(
 		}
 	} else if cursor.tool == Some(Tool::Remove) {
 		if trigger.button == PointerButton::Primary {
-			if cell.item_id != None {warn!("Can't remove item because cell {:?} is already empty", pos); return};
+			if cell.item_id == None {warn!("Can't remove item because cell {:?} is already empty", pos); return};
 			cell.item_id = None;
-			//despawn_item();
+			commands.trigger(DespawnItem(pos));
 		}
 	}
 }

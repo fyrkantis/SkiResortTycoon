@@ -30,6 +30,7 @@ pub fn setup(
 			CellPos(*pos),
 			Mesh3d(meshes.add(cell_sharp_mesh(&grid, pos, RenderAssetUsages::all()))),
 			MeshMaterial3d(cell_material(&materials, &grid, pos).clone()),
+			Pickable::default(),
 			Transform::from_xyz(x, 0., z),
 		))
 		.observe(handle_click)

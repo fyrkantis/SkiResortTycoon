@@ -92,11 +92,16 @@ fn spawn_items(
 }
 
 #[derive(Event, Debug, Clone, Copy)]
-pub struct DespawnItem;
+/// Despawn the item at specified cell pos.
+pub struct DespawnItem(pub Hex);
 fn despawn_item(
 	trigger: Trigger<DespawnItem>,
-	//item_entities: Query<Entity, With<CellItem>>,
+	mut commands: Commands,
+	item_entities: Query<(&CellPos, Entity), With<CellItem>>,
 ) {
-	//let items = trigger.0;
-
+	for (item_pos, item_entity) in item_entities.iter() {
+		if item_pos.0 == trigger.0 {
+			commands.entity(item_entity).despawn();
+		}
+	}
 }

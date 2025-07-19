@@ -18,5 +18,6 @@ fn main() {
 		game::GamePlugin,
 		ui::UiPlugin,
 	))
+	.insert_resource(MeshPickingSettings {require_markers: true, ..default()})
 	.run();
 }

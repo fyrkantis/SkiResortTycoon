@@ -38,6 +38,7 @@ pub fn setup(
 	commands.spawn((
 		Camera3d::default(),
 		Projection::from(PerspectiveProjection::default()),
+		MeshPickingCamera,
 		Transform {
 			translation: Vec3::new(-15., 30., -15.),
 			rotation: Quat::from_euler(EulerRot::YXZ, 1.25 * PI, PI / -8., 0.),
