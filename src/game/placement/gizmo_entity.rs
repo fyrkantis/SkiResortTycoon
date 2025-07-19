@@ -8,10 +8,11 @@ use crate::util::{
 };
 use crate::game::placement::{grid::Grid, cursor::Cursor};
 
-pub struct GizmoUpdatePlugin;
-impl Plugin for GizmoUpdatePlugin {
+pub struct GizmoEntityPlugin;
+impl Plugin for GizmoEntityPlugin {
 	fn build(&self, app: &mut App) {
 		app.add_systems(Startup, setup);
+
 		app.add_observer(update_hover_gizmo);
 		app.add_observer(set_hover_gizmo);
 		app.add_observer(remove_hover_gizmo);
@@ -43,27 +44,12 @@ fn create_hover_gizmo(
 	column_sloped(
 		&mut new_gizmo,
 		&pos,
-		grid,
+		&grid.heights,
 		Some(Color::srgb(1., 0., 0.)),
 		None,
 		Some(Color::srgb(0.8, 0., 1.)),
 	);
 	new_gizmo
-}
-
-#[derive(Event, Debug, Clone, Copy)]
-pub struct UpdateHoverGizmo;
-fn update_hover_gizmo(
-	_trigger: Trigger<UpdateHoverGizmo>,
-	mut gizmo_assets: ResMut<Assets<GizmoAsset>>,
-	grid: Res<Grid>,
-	gizmo_entity: Single<(&HoverGizmo, &mut Gizmo)>,
-) {
-	let (gizmo_pos, mut gizmo) = gizmo_entity.into_inner();
-	match gizmo_pos.0 {
-		Some(pos) => gizmo.handle = gizmo_assets.add(create_hover_gizmo(&grid, pos)),
-		None => (),
-	}
 }
 
 #[derive(Event, Debug, Clone, Copy)]
@@ -93,5 +79,20 @@ fn remove_hover_gizmo(
 	if gizmo_pos.0 == Some(pos) {
 		gizmo_pos.0 = None;
 		gizmo.handle = gizmo_assets.reserve_handle(); // TODO: Find if there's a better way to remove the gizmo.
+	}
+}
+
+#[derive(Event, Debug, Clone, Copy)]
+pub struct UpdateHoverGizmo;
+fn update_hover_gizmo(
+	_trigger: Trigger<UpdateHoverGizmo>,
+	mut gizmo_assets: ResMut<Assets<GizmoAsset>>,
+	grid: Res<Grid>,
+	gizmo_entity: Single<(&HoverGizmo, &mut Gizmo)>,
+) {
+	let (gizmo_pos, mut gizmo) = gizmo_entity.into_inner();
+	match gizmo_pos.0 {
+		Some(pos) => gizmo.handle = gizmo_assets.add(create_hover_gizmo(&grid, pos)),
+		None => (),
 	}
 }

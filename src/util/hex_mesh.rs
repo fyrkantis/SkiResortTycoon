@@ -6,7 +6,6 @@ use bevy::{
 use hexx::{Hex, MeshInfo, HexLayout, ColumnMeshBuilder, HeightMapMeshBuilder};
 
 use crate::util::hex::{axial_to_xz, HexCorner, corner_height};
-use crate::game::placement::grid::Grid; // TODO: Replace with trait describing HashMap<Hex, u16>.
 
 /// Converts hexx MeshInfo into bevy Mesh.
 /// From hexx docs example: https://docs.rs/hexx/latest/hexx/index.html#usage-in-bevy
@@ -27,20 +26,20 @@ pub fn cell_column_mesh(height: f32, asset_usage: RenderAssetUsages) -> Mesh {
 }
 
 #[allow(dead_code)] // TODO: Remove this function if still unused.
-pub fn mountain_column_mesh(grid: &Grid, asset_usage: RenderAssetUsages) -> Mesh {
+pub fn mountain_column_mesh(heights: &HashMap<Hex, u16>, asset_usage: RenderAssetUsages) -> Mesh {
 	hexagonal_mesh(HeightMapMeshBuilder::new(
 		&HexLayout::flat(),
-		&grid.cells.iter().map(|(pos, cell)| (*pos, cell.height as f32)).collect::<HashMap<Hex, f32>>(),
+		&heights.iter().map(|(pos, height)| (*pos, *height as f32)).collect::<HashMap<Hex, f32>>(),
 	).build(), asset_usage)
 }
 
-fn cell_sharp(grid: &Grid, pos: &Hex, world_transform: bool) -> Vec<Vec3> {
-	let center_y = grid.cells.get(pos).unwrap().height as f32;
+fn cell_sharp(heights: &HashMap<Hex, u16>, pos: &Hex, world_transform: bool) -> Vec<Vec3> {
+	let center_y = *heights.get(pos).unwrap() as f32;
 	let [center_x, center_z] = if world_transform {axial_to_xz(pos)} else {[0., 0.]};
 	let center_vertex = Vec3::new(center_x, center_y, center_z);
 	let corner_vertices: Vec<Vec3> = HexCorner::get_array().iter().map(|corner| {
 		let [x, z] = corner.to_xz();
-		Vec3::new(center_x + x, corner_height(grid, pos, *corner), center_z + z)
+		Vec3::new(center_x + x, corner_height(heights, pos, *corner), center_z + z)
 	}).collect();
 	let mut vertices: Vec<Vec3> = Vec::new();
 	for i in 0..6 { // TODO: Make this more efficient (it runs a lot).
@@ -51,54 +50,54 @@ fn cell_sharp(grid: &Grid, pos: &Hex, world_transform: bool) -> Vec<Vec3> {
 	vertices
 }
 
-pub fn cell_sharp_mesh(grid: &Grid, pos: &Hex, asset_usage: RenderAssetUsages) -> Mesh {
+pub fn cell_sharp_mesh(heights: &HashMap<Hex, u16>, pos: &Hex, asset_usage: RenderAssetUsages) -> Mesh {
 	Mesh::new(PrimitiveTopology::TriangleList, asset_usage)
-	.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, cell_sharp(grid, pos, false))
+	.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, cell_sharp(heights, pos, false))
 	.with_inserted_indices(Indices::U16((0..18).collect()))
 	.with_computed_smooth_normals()
 }
 
 #[allow(dead_code)] // TODO: Remove this function if still unused.
-pub fn mountain_sharp_mesh(grid: &Grid, asset_usage: RenderAssetUsages) -> Mesh {
+pub fn mountain_sharp_mesh(heights: &HashMap<Hex, u16>, asset_usage: RenderAssetUsages) -> Mesh {
 	let mut vertices: Vec<Vec3> = Vec::new();
-	for (pos, _cell) in grid.cells.iter() {
-		vertices.extend(cell_sharp(grid, pos, true));
+	for (pos, _cell) in heights.iter() {
+		vertices.extend(cell_sharp(heights, pos, true));
 	}
 	
 	Mesh::new(PrimitiveTopology::TriangleList, asset_usage)
 	.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vertices)
-	.with_inserted_indices(Indices::U32((0..grid.cells.keys().count() as u32 * 18).collect()))
+	.with_inserted_indices(Indices::U32((0..heights.keys().count() as u32 * 18).collect()))
 	.with_computed_smooth_normals()
 }
 
-fn cell_fuzzy(grid: &Grid, pos: &Hex, world_transform: bool) -> Vec<Vec3> {
+fn cell_fuzzy(heights: &HashMap<Hex, u16>, pos: &Hex, world_transform: bool) -> Vec<Vec3> {
 	let [center_x, center_z] = if world_transform {axial_to_xz(pos)} else {[0., 0.]};
-	let cell = grid.cells.get(pos).unwrap();
-	vec![Vec3::new(center_x, cell.height as f32, center_z)]
+	let height = heights.get(pos).unwrap();
+	vec![Vec3::new(center_x, *height as f32, center_z)]
 	.into_iter().chain(HexCorner::get_array().iter().map(|corner| {
 			let [corner_x, corner_z] = corner.to_xz();
-			Vec3::new(center_x + corner_x, corner_height(grid, pos, *corner), center_z + corner_z)
+			Vec3::new(center_x + corner_x, corner_height(heights, pos, *corner), center_z + corner_z)
 		})
 	).collect()
 }
 
 #[allow(dead_code)] // TODO: Remove this function if still unused.
-pub fn cell_fuzzy_mesh(grid: &Grid, pos: &Hex, asset_usage: RenderAssetUsages) -> Mesh {
+pub fn cell_fuzzy_mesh(heights: &HashMap<Hex, u16>, pos: &Hex, asset_usage: RenderAssetUsages) -> Mesh {
 	Mesh::new(PrimitiveTopology::TriangleList, asset_usage)
-	.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, cell_fuzzy(grid, pos, false))
+	.with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, cell_fuzzy(heights, pos, false))
 	.with_inserted_indices(Indices::U16(vec![0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 5, 4, 0, 6, 5, 0, 1, 6]))
 	.with_computed_smooth_normals()
 }
 
 #[allow(dead_code)] // TODO: Remove this function if still unused.
 /// Mesh consisting of soft hexagons.
-pub fn mountain_fuzzy_mesh(grid: &Grid, asset_usage: RenderAssetUsages) -> Mesh {
+pub fn mountain_fuzzy_mesh(heights: &HashMap<Hex, u16>, asset_usage: RenderAssetUsages) -> Mesh {
 	let mut vertices: Vec<Vec3> = Vec::new();
 	let mut vertices_count: u16 = 0;
 	let mut triangles: Vec<u16> = Vec::new();
-	for (pos, _cell) in grid.cells.iter() {
+	for pos in heights.keys().into_iter() {
 		let center_index = vertices_count;
-		vertices.extend(cell_fuzzy(grid, pos, true));
+		vertices.extend(cell_fuzzy(heights, pos, true));
 		vertices_count += 7;
 		for i in 0..6 {
 			triangles.push(center_index);
@@ -114,13 +113,13 @@ pub fn mountain_fuzzy_mesh(grid: &Grid, asset_usage: RenderAssetUsages) -> Mesh 
 }
 
 #[allow(dead_code)] // TODO: Remove this function if still unused.
-pub fn mountain_smooth_mesh(grid: &Grid, asset_usage: RenderAssetUsages) -> Mesh { // BUG: Some vertices are displaced because later cells interpret the wrong vertices as existing.
+pub fn mountain_smooth_mesh(heights: &HashMap<Hex, u16>, asset_usage: RenderAssetUsages) -> Mesh { // BUG: Some vertices are displaced because later cells interpret the wrong vertices as existing.
 	// Help function that finds the index of the corner vertex with a specific position, or creates one if it doesn't exist.
 	let corner_vertex = |
 		center_pos: Hex,
 		center_cords: Vec3,
 		corner: HexCorner,
-		grid: &Grid,
+		heights: &HashMap<Hex, u16>,
 		vertices: &mut Vec<Vec3>,
 		vertices_count: &mut u16,
 		corner_vertex_indices: &mut [HashMap<Hex, u16>; 2]
@@ -132,7 +131,7 @@ pub fn mountain_smooth_mesh(grid: &Grid, asset_usage: RenderAssetUsages) -> Mesh
 			Some(corner_index) => *corner_index, // This edge vertex already exists.
 			None => { // This edge vertex doesn't exist yet, needs to be calculated.
 				let [corner_x, corner_z] = corner.to_xz();
-				let corner_cords = Vec3::new(center_cords.x + corner_x, corner_height(grid, &center_pos, corner), center_cords.z - corner_z);
+				let corner_cords = Vec3::new(center_cords.x + corner_x, corner_height(heights, &center_pos, corner), center_cords.z - corner_z);
 
 				let corner_index = *vertices_count;
 				vertices.push(corner_cords);
@@ -148,16 +147,16 @@ pub fn mountain_smooth_mesh(grid: &Grid, asset_usage: RenderAssetUsages) -> Mesh
 	// The edge vertices can be mapped on to two hexagonal grids, one for even directions and one for odd.
 	let mut corner_vertex_indices: [HashMap<Hex, u16>; 2] = [HashMap::new(), HashMap::new()];
 	let mut triangles: Vec<u16> = Vec::new();
-	for (pos, cell) in grid.cells.iter() {
-		let y = cell.height as f32;
+	for (pos, height) in heights.iter() {
+		let y = *height as f32;
 		let [x, z] = axial_to_xz(&pos);
 		let vertex_index = vertices_count;
 		let cords = Vec3::new(x, y, z);
 		vertices.push(cords);
 		vertices_count += 1;
 		for (corner_i, corner) in HexCorner::get_array().iter().enumerate() {
-			let corner_1_index = corner_vertex(*pos, cords, *corner, &grid, &mut vertices, &mut vertices_count, &mut corner_vertex_indices);
-			let corner_2_index = corner_vertex(*pos, cords, HexCorner::get_array()[(corner_i + 1) % 6], &grid, &mut vertices, &mut vertices_count, &mut corner_vertex_indices);
+			let corner_1_index = corner_vertex(*pos, cords, *corner, heights, &mut vertices, &mut vertices_count, &mut corner_vertex_indices);
+			let corner_2_index = corner_vertex(*pos, cords, HexCorner::get_array()[(corner_i + 1) % 6], heights, &mut vertices, &mut vertices_count, &mut corner_vertex_indices);
 			triangles.push(vertex_index);
 			triangles.push(corner_2_index);
 			triangles.push(corner_1_index);

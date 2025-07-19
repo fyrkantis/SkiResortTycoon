@@ -1,16 +1,14 @@
-use std::cmp::Ordering;
 use bevy::prelude::*;
 use hexx::Hex;
 
-use crate::game::placement::grid::GridCell;
-use crate::game::surface::Surface;
+use crate::game::{surface::Surface, object::ObjectType};
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Tool {
 	#[default]
 	None,
 	Select(Hex, Option<u16>),
-	Item,
+	Place,
 	Surface,
 	Terrain,
 	Remove,
@@ -18,8 +16,8 @@ pub enum Tool {
 
 #[derive(Resource, Default, Debug, Clone)]
 pub struct Cursor {
-	pub hover_cell: Option<(Hex, GridCell)>,
+	pub hover_cell: Option<Hex>,
 	pub tool: Tool,
 	pub selected_surface: Option<Surface>,
-	pub selected_item_id: Option<u16>,
+	pub selected_object_type: Option<ObjectType>,
 }

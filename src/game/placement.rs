@@ -3,11 +3,8 @@ use bevy::prelude::*;
 pub mod grid;
 pub mod cursor;
 
-mod grid_update;
-mod item_update;
-mod gizmo_update;
-mod grid_interaction;
-mod grid_setup;
+mod grid_entity;
+mod gizmo_entity;
 
 pub struct PlacementPlugin;
 impl Plugin for PlacementPlugin {
@@ -15,10 +12,8 @@ impl Plugin for PlacementPlugin {
 		app.insert_resource(grid::Grid::new(95, 50, Default::default()));
 		app.insert_resource(cursor::Cursor::default());
 		app.add_plugins((
-			grid_update::GridUpdatePlugin,
-			item_update::ItemUpdatePlugin,
-			gizmo_update::GizmoUpdatePlugin,
+			grid_entity::GridEntityPlugin,
+			gizmo_entity::GizmoEntityPlugin,
 		));
-		app.add_systems(Startup, grid_setup::setup);
 	}
 }

@@ -1,11 +1,4 @@
 use bevy::{prelude::*, color::palettes::tailwind};
-use hexx::Hex;
-
-use crate::util::hex::cell_slope;
-use crate::game::{
-	placement::grid::Grid,
-	surface::Surface,
-};
 
 #[derive(Resource, Debug, Default, Clone)]
 pub struct Materials {
@@ -17,9 +10,11 @@ pub struct Materials {
 
 	pub red: Handle<StandardMaterial>,
 	pub blue: Handle<StandardMaterial>,
+
+	pub error: Handle<StandardMaterial>,
 }
 
-pub fn setup(
+pub fn load_assets(
 	mut material_assets: ResMut<Assets<StandardMaterial>>,
 	mut materials: ResMut<Materials>,
 ) {
@@ -45,22 +40,7 @@ pub fn setup(
 
 		red: material_assets.add(Color::srgb(1., 0., 0.)),
 		blue: material_assets.add(Color::srgb(0., 0., 1.)),
+
+		error: material_assets.add(Color::srgb(1., 0., 0.)),
 	};
-}
-
-pub const SNOW_MAX_SLOPE: u16 = 3;
-pub const DIRT_MAX_SLOPE: u16 = 4;
-
-pub fn cell_material<'a>(materials: &'a Materials, grid: &Grid, pos: &Hex) -> &'a Handle<StandardMaterial> {
-	let cell = grid.cells.get(pos).unwrap();
-	match cell.surface {
-		Surface::Piste => &materials.piste,
-		Surface::Water => &materials.water,
-		Surface::Normal => {
-			let slope = cell_slope(grid, pos);
-			if slope > DIRT_MAX_SLOPE {return &materials.rock}
-			else if slope > SNOW_MAX_SLOPE {return &materials.dirt}
-			else {return &materials.snow}
-		}
-	}
 }

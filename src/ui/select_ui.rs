@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_egui::*;
 
 use crate::game::{
-	item::Items,
+	object::structure::Structures,
 	placement::{
 		cursor::{Cursor, Tool},
 		grid::Grid,
@@ -12,16 +12,16 @@ use crate::game::{
 pub fn setup(
 	mut contexts: EguiContexts,
 	cursor: Res<Cursor>,
-	items: Res<Items>,
+	structures: Res<Structures>,
 	grid: Res<Grid>,
 ) {
 	match cursor.tool {
-		Tool::Select(pos, item_id) => {
-			let item = match item_id {Some(item_id) => items.0.get(&item_id), None => None};
+		Tool::Select(pos, structure_id) => {
+			let structure = match structure_id {Some(structure_id) => structures.0.get(&structure_id), None => None};
 			egui::Window::new("Selected")
 			.collapsible(false)
 			.show(contexts.ctx_mut(), |ui| {
-				ui.label(match item {Some(item) => item.name, None => "Empty cell"});
+				ui.label(match structure {Some(structure) => structure.name, None => "Empty cell"});
 			});
 		},
 		_ => (),

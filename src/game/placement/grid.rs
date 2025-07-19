@@ -1,18 +1,11 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use bevy::prelude::*;
 use hexx::Hex;
 use noise::{Perlin, NoiseFn};
 use rand::{prelude::*, random_bool};
 
 use crate::util::hex::{axial_to_xz, offset_to_axial};
-use crate::game::surface::Surface;
-
-#[derive(Debug, Default, Clone, Copy)]
-pub struct GridCell {
-	pub height: u16,
-	pub surface: Surface,
-	pub item_id: Option<u16>,
-}
+use crate::game::{surface::Surface, object::ObjectInstance};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct WorldGenSettings {
@@ -31,18 +24,41 @@ impl Default for WorldGenSettings {
 
 #[derive(Resource, Debug, Clone)]
 pub struct Grid {
-	pub cells: HashMap<Hex, GridCell>,
+	pub heights: HashMap<Hex, u16>,
+	pub surfaces: HashMap<Hex, Surface>,
+	/// All placed objects indexed by their instance id.
+	pub objects: BTreeMap<u32, ObjectInstance>,
+	#[allow(unused_variables)] // TODO: Remove if still unused.
 	pub width: u16,
+	#[allow(unused_variables)] // TODO: Remove if still unused.
 	pub length: u16,
+	#[allow(unused_variables)] // TODO: Remove if still unused.
 	pub settings: WorldGenSettings
 }
 impl Grid {
 	pub const WATER_HEIGHT: f64 = -3.;
+
+	/// Adds the specified ObjectInstance to the objects map.
+	/// Returns the resulting instance id in the map.
+	pub fn push_object(&mut self, object: ObjectInstance) -> u32 {
+		let instance_id = match self.objects.last_key_value() {Some((id, _object)) => *id + 1, None => 0};
+		match self.objects.insert(instance_id, object) {
+			Some(old_object) => error!("When pushing new object instance {:?} the resulting instance id {} was already in use by {:?}, which was now removed replaced in the grid.", object, instance_id, old_object),
+			None => (),
+		}
+		instance_id
+	}
 	
 	/// Generates a new grid with set width and length.
 	/// It is recommended to use an odd number for width to avoid sharp corners.
 	pub fn new(width: u16, length: u16, settings: WorldGenSettings) -> Self {
-		let mut cells: HashMap<Hex, GridCell> = HashMap::new();
+		let mut grid = Grid {
+			heights: HashMap::new(),
+			surfaces: HashMap::new(),
+			objects: BTreeMap::new(),
+			settings: settings, length: length, width: width,
+		};
+
 		let mut rng = rand::rng();
 		let perlin = Perlin::new(rng.random());
 		let max_z = length as f64 * f64::sqrt(3.); // TODO: Use fancy new std::f32::consts::SQRT_3 when available. https://github.com/rust-lang/rust/issues/103883
@@ -53,39 +69,24 @@ impl Grid {
 				let [x, z] = axial_to_xz(&pos_axial);
 				let height = perlin.get([x as f64 / settings.peak_width, z as f64 / settings.peak_width])
 				* settings.peak_height + (z as f64 / max_z) * settings.slope_height;
+				grid.heights.insert(pos_axial, height as u16);
 
 				// Add water if height is low enough.
 				let surface = if height < Grid::WATER_HEIGHT {Surface::Water} else {Surface::Normal};
+				grid.surfaces.insert(pos_axial, surface);
 
 				// Add tree if height + randomness is high enough.
-				let item_id = if surface != Surface::Water && random_bool((0.5 - height / (2. * (settings.peak_height + settings.slope_height))).clamp(0., 1.)) {Some(1)} else {None};
-
-				cells.insert(pos_axial, GridCell {
-					height: height as u16,
-					surface: surface,
-					item_id: item_id,
-					..Default::default()
-				});
-				
+				if surface != Surface::Water
+					&& random_bool((0.5 - height / (2. * (settings.peak_height + settings.slope_height))).clamp(0., 1.)
+				) {
+					grid.push_object(ObjectInstance::new_structure(1, pos_axial));
+				}
 			}
 		}
-		Grid {
-			cells: cells,
-			width: width,
-			length: length,
-			settings: settings,
-		}
+		grid
 	}
 }
 
-#[derive(Component, Debug, Clone, Copy)]
-/// Component for the visible cell of a mountain.
-pub struct CellMesh;
-
 #[derive(Component, Debug, PartialEq, Eq, Clone, Copy, Hash)]
-/// Component for a placed item entity, with attached item ID.
-pub struct CellItem(pub u16);
-
-#[derive(Component, Debug, PartialEq, Eq, Clone, Copy, Hash)]
-/// Component for the axial position that corresponds to this mesh/item.
+/// Component for the axial position that corresponds to this mesh/structure.
 pub struct CellPos(pub Hex);

@@ -1,6 +1,5 @@
+use std::collections::HashMap;
 use hexx::Hex;
-
-use crate::game::placement::grid::Grid; // TODO: Replace with trait describing HashMap<Hex, u16>.
 
 // TODO: Use fancy new std::f32::consts::SQRT_3 when available. https://github.com/rust-lang/rust/issues/103883
 const SQRT_3: f32 = 1.732050807568877293527446341505872367;
@@ -77,33 +76,33 @@ impl HexCorner {
 }
 
 /// Calculates the height of a corner of a hex cell in a grid (which is an average of all surounding cell heights.
-/// Panics if pos is not in grid.cells.
-pub fn corner_height(grid: &Grid, pos: &Hex, corner: HexCorner) -> f32 {
+/// Panics if pos is not in heights.
+pub fn corner_height(heights: &HashMap<Hex, u16>, pos: &Hex, corner: HexCorner) -> f32 {
 	let [edge_1, edge_2] = corner.neighbor_edges();
 	// Positions of vertex neighboring cells.
 	let (pos_1, pos_2) = (*pos + edge_1.direction(), *pos + edge_2.direction());
-	let (cell_1_opt, cell_2_opt) = (grid.cells.get(&pos_1), grid.cells.get(&pos_2));
+	let (cell_1_opt, cell_2_opt) = (heights.get(&pos_1), heights.get(&pos_2));
 
-	let center_y = grid.cells.get(pos).unwrap().height as f32;
+	let center_y = *heights.get(pos).unwrap() as f32;
 
 	// Average height of all 1-3 cells.
 	match cell_1_opt {
 		Some(cell_1) => match cell_2_opt {
-			Some(cell_2) => (center_y + cell_1.height as f32 + cell_2.height as f32) / 3.,
-			None => (center_y + cell_1.height as f32) / 2.,
+			Some(cell_2) => (center_y + *cell_1 as f32 + *cell_2 as f32) / 3.,
+			None => (center_y + *cell_1 as f32) / 2.,
 		},
 		None => match cell_2_opt {
-			Some(cell_2) => (center_y + cell_2.height as f32) / 2.,
+			Some(cell_2) => (center_y + *cell_2 as f32) / 2.,
 			None => center_y,
 		}
 	}
 }
 
-pub fn cell_slope(grid: &Grid, pos: &Hex) -> u16 {
-	let height = grid.cells.get(pos).unwrap().height as i32;
+pub fn cell_slope(heights: &HashMap<Hex, u16>, pos: &Hex) -> u16 {
+	let height = *heights.get(pos).unwrap() as i32;
 	let deltas: Vec<i32> = HexEdge::get_array()
 	.iter()
-	.map(|edge| match grid.cells.get(&(*pos + edge.direction())) {Some(cell) => cell.height as i32 - height, None => 0})
+	.map(|edge| match heights.get(&(*pos + edge.direction())) {Some(cell_height) => *cell_height as i32 - height, None => 0})
 	.collect();
 	let min = deltas.iter().min().unwrap();
 	let max = deltas.iter().max().unwrap();

@@ -1,43 +1,8 @@
-use std::cmp::Ordering;
-use std::hash::{Hash, Hasher};
-use std::collections::HashMap;
 use bevy::{prelude::*, color::palettes::tailwind};
 
 use crate::game::material::Materials;
 
-#[derive(Debug, Clone)]
-pub struct Item {
-	pub id: u16,
-	pub name: &'static str,
-	pub scene: Handle<Scene>,
-}
-/// Constructs new item.
-pub const fn item(id: u16, name: &'static str, scene: Handle<Scene>) -> (u16, Item) {(id, Item {id: id, name: name, scene: scene})}
-impl PartialEq for Item {fn eq(&self, other: &Self) -> bool {self.id == other.id}}
-impl Eq for Item {}
-impl Ord for Item {fn cmp(&self, other: &Self) -> Ordering {self.id.cmp(&other.id)}}
-impl PartialOrd for Item {fn partial_cmp(&self, other: &Self) -> Option<Ordering> {Some(self.cmp(other))}}
-impl Hash for Item {fn hash<H: Hasher>(&self, state: &mut H) {self.id.hash(state)}}
-
-#[derive(Resource, Debug, Clone)]
-pub struct Items(pub HashMap<u16, Item>);
-
-/// Loads all item scenes.
-pub fn setup(
-	mut commands: Commands,
-	mut scene_assets: ResMut<Assets<Scene>>,
-	mut mesh_assets: ResMut<Assets<Mesh>>,
-	mut material_assets: ResMut<Assets<StandardMaterial>>,
-	materials: Res<Materials>,
-) {
-	commands.insert_resource(Items(HashMap::from([
-		item(1, "Tree", scene_assets.add(tree_scene(&mut mesh_assets, &mut material_assets))),
-		item(111, "Red Box", scene_assets.add(red_box_scene(&mut mesh_assets, &materials))),
-		item(222, "Blue Sphere", scene_assets.add(blue_sphere_scene(&mut mesh_assets, &materials))),
-	])));
-}
-
-fn tree_scene(
+pub fn tree_scene(
 	mesh_assets: &mut ResMut<Assets<Mesh>>,
 	material_assets: &mut ResMut<Assets<StandardMaterial>>,
 ) -> Scene {
@@ -65,7 +30,7 @@ fn tree_scene(
 	Scene::new(world)
 }
 
-fn red_box_scene(
+pub fn red_box_scene(
 	meshes: &mut ResMut<Assets<Mesh>>,
 	materials: &Materials,
 ) -> Scene {
@@ -78,7 +43,7 @@ fn red_box_scene(
 	Scene::new(world)
 }
 
-fn blue_sphere_scene(
+pub fn blue_sphere_scene(
 	meshes: &mut ResMut<Assets<Mesh>>,
 	materials: &Materials,
 ) -> Scene {
