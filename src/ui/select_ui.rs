@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_egui::*;
 
 use crate::game::{
-	object::structure::Structures,
+	object::structure::StructureTypes,
 	placement::{
 		cursor::{Cursor, Tool},
 		grid::Grid,
@@ -12,7 +12,7 @@ use crate::game::{
 pub fn setup(
 	mut contexts: EguiContexts,
 	cursor: Res<Cursor>,
-	structures: Res<Structures>,
+	structures: Res<StructureTypes>,
 	grid: Res<Grid>,
 ) {
 	match cursor.tool {

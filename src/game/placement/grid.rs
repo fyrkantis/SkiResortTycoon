@@ -5,7 +5,10 @@ use noise::{Perlin, NoiseFn};
 use rand::{prelude::*, random_bool};
 
 use crate::util::hex::{axial_to_xz, offset_to_axial};
-use crate::game::{surface::Surface, object::ObjectInstance};
+use crate::game::{
+	surface::Surface,
+	object::{ObjectInstance, structure::{StructureInstance, SpawnStructure}},
+};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct WorldGenSettings {
@@ -43,7 +46,7 @@ impl Grid {
 	pub fn push_object(&mut self, object: ObjectInstance) -> u32 {
 		let instance_id = match self.objects.last_key_value() {Some((id, _object)) => *id + 1, None => 0};
 		match self.objects.insert(instance_id, object) {
-			Some(old_object) => error!("When pushing new object instance {:?} the resulting instance id {} was already in use by {:?}, which was now removed replaced in the grid.", object, instance_id, old_object),
+			Some(old_object) => error!("When pushing new object instance, the resulting instance id {} was already in use by {:?}, which was now replaced in the grid.", instance_id, old_object),
 			None => (),
 		}
 		instance_id
@@ -79,7 +82,7 @@ impl Grid {
 				if surface != Surface::Water
 					&& random_bool((0.5 - height / (2. * (settings.peak_height + settings.slope_height))).clamp(0., 1.)
 				) {
-					grid.push_object(ObjectInstance::new_structure(1, pos_axial));
+					grid.push_object(ObjectInstance::Structure(StructureInstance::new(1, pos_axial)));
 				}
 			}
 		}

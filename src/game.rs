@@ -3,7 +3,6 @@ use bevy::prelude::*;
 mod material;
 mod surface;
 pub mod object;
-mod object_entity;
 
 mod camera;
 mod scene;

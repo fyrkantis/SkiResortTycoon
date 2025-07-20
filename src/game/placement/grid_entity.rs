@@ -13,8 +13,12 @@ use crate::game::{
 		grid::{Grid, CellPos},
 		gizmo_entity::{SetHoverGizmo, RemoveHoverGizmo, UpdateHoverGizmo},
 	},
-	object::{ObjectType, ObjectInstance},
-	object_entity::{SpawnObject, SpawnObjects, DespawnObject, UpdateStructureHeights},
+	object::{
+		ObjectType,
+		ObjectInstance,
+		structure::{StructureInstance, SpawnStructure, DespawnStructure, UpdateStructureHeights},
+		lift::{LiftInstance, SpawnLift}
+	},
 	material::Materials,
 	surface::{Surface, cell_material},
 };
@@ -59,6 +63,12 @@ pub fn setup(
 		.observe(handle_click)
 		.observe(handle_hover_start)
 		.observe(handle_hover_end);
+	}
+	for (instance_id, instance) in grid.objects.iter() {
+		match instance {
+			ObjectInstance::Structure(instance) => commands.trigger(SpawnStructure(*instance_id, *instance)),
+			ObjectInstance::Lift(instance) => commands.trigger(SpawnLift(*instance_id, instance.clone())),
+		}
 	}
 }
 
@@ -143,9 +153,15 @@ pub fn handle_click(
 		if matches!(trigger.button, PointerButton::Primary) {
 			match cursor.selected_object_type {
 				Some(object_type) => {
-					let object_instance = ObjectInstance::new(object_type, pos);
-					let instance_id = grid.push_object(object_instance);
-					commands.trigger(SpawnObject(instance_id, object_instance));
+					let object_instance = match object_type {
+						ObjectType::Structure(structure_id) => ObjectInstance::Structure(StructureInstance::new(structure_id, pos)),
+						ObjectType::Lift => ObjectInstance::Lift(LiftInstance {nodes: Vec::new()}),
+					};
+					let instance_id = grid.push_object(object_instance.clone());
+					match object_instance {
+						ObjectInstance::Structure(instance) => commands.trigger(SpawnStructure(instance_id, instance)),
+						ObjectInstance::Lift(instance) => commands.trigger(SpawnLift(instance_id, instance)),
+					}
 				},
 				None => warn!("Can't place object at cell {:?} because no object is currently selected.", pos),
 			}

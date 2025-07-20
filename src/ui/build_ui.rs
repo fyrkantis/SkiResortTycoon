@@ -1,13 +1,13 @@
 use bevy::prelude::*;
 use bevy_egui::*;
 
-use crate::game::{object::ObjectType, object::structure::Structures};
+use crate::game::{object::ObjectType, object::structure::StructureTypes};
 use crate::game::placement::cursor::{Cursor, Tool};
 
 pub fn setup(
 	mut contexts: EguiContexts,
 	mut cursor: ResMut<Cursor>,
-	structures: Res<Structures>,
+	structures: Res<StructureTypes>,
 ) {
 	egui::Window::new("Build")
 	.collapsible(false)
