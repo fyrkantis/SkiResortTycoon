@@ -39,6 +39,10 @@ pub fn red_box_scene(
 		Mesh3d(meshes.add(Cuboid::new(1., 1., 1.))),
 		MeshMaterial3d(materials.red.clone()),
 		Transform::from_xyz(0., 0.5, 0.),
+		Pickable {
+			is_hoverable: true,
+			should_block_lower: false,
+		}
 	));
 	Scene::new(world)
 }

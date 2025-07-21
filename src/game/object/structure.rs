@@ -1,12 +1,17 @@
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::collections::HashMap;
+
 use bevy::prelude::*;
+use bevy_mod_outline::{OutlineVolume, OutlineMode, AsyncSceneInheritOutline};
 use hexx::Hex;
 
 use crate::util::hex::axial_to_xz;
 use crate::game::{
-	placement::grid::{Grid, CellPos},
+	placement::{
+		grid::{Grid, CellPos},
+		cursor::{Cursor, Tool},
+	},
 	material,
 	material::Materials,
 	object::ObjectEntity,
@@ -77,18 +82,6 @@ pub fn load_assets(
 /// All entities with a StructureEntity component will also have an ObjectEntity component for the instance ID.
 pub struct StructureEntity(pub u16);
 
-/// This is not a system.
-fn spawn_structure_entity(
-	commands: &mut Commands,
-	structures: &StructureTypes,
-	heights: &HashMap<Hex, u16>,
-	instance_id: u32,
-	structure_id: u16,
-	pos: Hex,
-) {
-	
-}
-
 #[derive(Event, Debug, Clone, Copy)]
 /// Spawns entity for object instance and associated instance IDs.
 pub struct SpawnStructure(pub u32, pub StructureInstance);
@@ -111,7 +104,30 @@ fn spawn_structure(
 			translation: Vec3::new(x, y, z),
 			..default()
 		},
-	));
+		OutlineVolume {
+			width: 5.,
+			colour: Color::srgb(0., 0., 1.),
+			..default()
+		},
+		OutlineMode::FloodFlat,
+		AsyncSceneInheritOutline::default(),
+	)).observe(handle_structure_click);
+}
+
+fn handle_structure_click(
+	mut trigger: Trigger<Pointer<Pressed>>,
+	mut cursor: ResMut<Cursor>,
+	mut structures: Query<(&ObjectEntity, &mut OutlineVolume)>,
+) {
+	if matches!(cursor.tool, Tool::None) || matches!(cursor.tool, Tool::Select(_)) {
+		trigger.propagate(false); // TODO: Double-check and test if this is the best way to handle overlap.
+		if matches!(trigger.button, PointerButton::Primary) {
+			let (instance_id, mut outline) = match structures.get_mut(trigger.target()) {Ok(object) => object, Err(e) => {error!("Mouse clicked unknown structure: {}", e); return}};
+			info!("Selected instance {}.", instance_id.0);
+			outline.visible = true;
+			cursor.tool = Tool::Select(instance_id.0);
+		}
+	}
 }
 
 #[derive(Event, Debug, Clone, Copy)]
@@ -120,13 +136,13 @@ pub struct DespawnStructure(pub u32);
 fn despawn_structure(
 	trigger: Trigger<DespawnStructure>,
 	mut commands: Commands,
-	entities: Query<(&CellPos, Entity), With<StructureEntity>>,
+	entities: Query<(&ObjectEntity, Entity), With<StructureEntity>>,
 ) {
-	//for (structure_pos, structure_entity) in structure_entities.iter() {
-	//	if structure_pos.0 == trigger.0 {
-	//		commands.entity(structure_entity).despawn();
-	//	}
-	//}
+	for (instance_id, entity) in entities.iter() {
+		if instance_id.0 == trigger.0 {
+			commands.entity(entity).despawn();
+		}
+	}
 }
 
 /// Goes through all structure entities and adjusts the heights to match the terrain.

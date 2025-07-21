@@ -3,6 +3,7 @@
 #![cfg_attr(not(feature = "fast-compile"), windows_subsystem = "windows")]
 
 use bevy::prelude::*;
+use bevy_mod_outline::OutlinePlugin;
 use bevy_egui::EguiPlugin;
 
 mod game;
@@ -13,6 +14,7 @@ fn main() {
 	App::new()
 	.add_plugins((
 		DefaultPlugins,
+		OutlinePlugin,
 		MeshPickingPlugin,
 		EguiPlugin {enable_multipass_for_primary_context: true},
 		game::GamePlugin,

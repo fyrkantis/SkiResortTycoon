@@ -104,14 +104,9 @@ pub fn handle_click(
 	mut grid: ResMut<Grid>,
 	cells: Query<&CellPos, With<CellMesh>>,
 ) {
-	let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse clicked cell, but it's missing an entity with CellPos and CellMesh components: {}", e); return}};
+	let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse clicked unknown cell: {}", e); return}};
 
-	/*if matches!(cursor.tool, Tool::None) || matches!(cursor.tool, Tool::Select(_, _)) {
-		if matches!(trigger.button, PointerButton::Primary) {
-			info!("Selected {:?}", pos);
-			cursor.tool = Tool::Select(pos, cell.structure_id);
-		}
-	} else */if matches!(cursor.tool, Tool::Terrain) {
+	if matches!(cursor.tool, Tool::Terrain) {
 		let height = match grid.heights.get_mut(&pos) {Some(cell) => cell, None => {error!("Attempted to change height, but grid contains no cell height for pos {:?}.", pos); return}};
 		if matches!(trigger.button, PointerButton::Primary) {
 			*height += 1;
