@@ -10,11 +10,12 @@ use crate::util::hex::axial_to_xz;
 use crate::game::{
 	placement::{
 		grid::{Grid, CellPos},
-		cursor::{Cursor, Tool},
+		cursor::{Cursor, Tool, HoverObjects},
 	},
 	material,
 	material::Materials,
 	object::ObjectEntity,
+	events::{UpdateHoverOutline, UpdateHoverGizmo},
 };
 
 mod temp_scenes;
@@ -54,6 +55,7 @@ impl Plugin for StructurePlugin {
 		app.add_systems(PreStartup, load_assets.after(material::load_assets));
 
 		app.add_observer(spawn_structure);
+		app.add_observer(update_structure_outlines);
 		app.add_observer(despawn_structure);
 		app.add_observer(update_structure_heights);
 	}
@@ -105,27 +107,89 @@ fn spawn_structure(
 			..default()
 		},
 		OutlineVolume {
-			width: 5.,
-			colour: Color::srgb(0., 0., 1.),
+			width: 2.,
 			..default()
 		},
-		OutlineMode::FloodFlat,
+		OutlineMode::FloodFlat, // TODO: Find a way to make the outline as smooth as the gizmo.
 		AsyncSceneInheritOutline::default(),
-	)).observe(handle_structure_click);
+	))
+	.observe(handle_hover_start)
+	.observe(handle_hover_end)
+	.observe(handle_click);
 }
 
-fn handle_structure_click(
-	mut trigger: Trigger<Pointer<Pressed>>,
+fn handle_hover_start(
+	mut trigger: Trigger<Pointer<Over>>,
+	mut commands: Commands,
 	mut cursor: ResMut<Cursor>,
-	mut structures: Query<(&ObjectEntity, &mut OutlineVolume)>,
+	structures: Query<&ObjectEntity, With<StructureEntity>>,
+) {
+	if matches!(cursor.tool, Tool::None) || matches!(cursor.tool, Tool::Select(_)) {
+		let instance_id = match structures.get(trigger.target()) {Ok(instance) => instance.0, Err(e) => {error!("Mouse started hovering unknown structure: {}", e); return}};
+		trigger.propagate(false);
+		cursor.hover_cell = None;
+		commands.trigger(UpdateHoverGizmo);
+		cursor.hover_objects = HoverObjects::Single(instance_id);
+		commands.trigger(UpdateHoverOutline);
+	}
+}
+
+fn handle_hover_end(
+	trigger: Trigger<Pointer<Out>>,
+	mut commands: Commands,
+	mut cursor: ResMut<Cursor>,
+	structures: Query<&ObjectEntity, With<StructureEntity>>,
+) {
+	let instance_id = match structures.get(trigger.target()) {Ok(instance) => instance.0, Err(e) => {error!("Mouse stopped hovering unknown structure: {}", e); return}};
+	
+	if cursor.tool == Tool::Select(instance_id) {
+		cursor.tool = Tool::None;
+		commands.trigger(UpdateHoverOutline);
+	}
+}
+
+fn handle_click(
+	mut trigger: Trigger<Pointer<Pressed>>,
+	mut commands: Commands,
+	mut cursor: ResMut<Cursor>,
 ) {
 	if matches!(cursor.tool, Tool::None) || matches!(cursor.tool, Tool::Select(_)) {
 		trigger.propagate(false); // TODO: Double-check and test if this is the best way to handle overlap.
 		if matches!(trigger.button, PointerButton::Primary) {
-			let (instance_id, mut outline) = match structures.get_mut(trigger.target()) {Ok(object) => object, Err(e) => {error!("Mouse clicked unknown structure: {}", e); return}};
-			info!("Selected instance {}.", instance_id.0);
+			let instance_id = match cursor.hover_object() {Some(instance_id) => instance_id, None => {error!("Mouse clicked structure before it was hovered."); return}};
+			cursor.tool = Tool::Select(instance_id);
+			commands.trigger(UpdateHoverOutline);
+		}
+	}
+}
+
+fn update_structure_outlines(
+	_trigger: Trigger<UpdateHoverOutline>,
+	cursor: Res<Cursor>,
+	mut entities: Query<(&ObjectEntity, &mut OutlineVolume), With<StructureEntity>>,
+) {
+	for (instance_id, mut outline) in entities.iter_mut() { // TODO: Find less of a brute-force solution for updating structure outlines.
+		if cursor.tool == Tool::Select(instance_id.0) {
+			outline.colour = Color::srgb(1., 0., 0.);
 			outline.visible = true;
-			cursor.tool = Tool::Select(instance_id.0);
+			continue
+		}
+		match &cursor.hover_objects {
+			HoverObjects::None => outline.visible = false,
+			HoverObjects::Single(hover_id) => {
+				if *hover_id == instance_id.0 {outline.colour = Color::srgb(0., 0., 1.); outline.visible = true}
+				else {outline.visible = false}
+			},
+			HoverObjects::Many(hover_ids, hover_index) => 'many: {
+				for (index, id) in hover_ids.iter().enumerate() {
+					if *id == instance_id.0 {
+						outline.colour = if index == *hover_index {Color::srgb(0., 0., 1.)} else {Color::srgb(0., 1., 1.)};
+						outline.visible = true;
+						break 'many
+					}
+				}
+				outline.visible = false; // Only gets here if for loop doesn't break.
+			}
 		}
 	}
 }

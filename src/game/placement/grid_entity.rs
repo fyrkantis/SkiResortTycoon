@@ -9,9 +9,9 @@ use crate::util::{
 };
 use crate::game::{
 	placement::{
-		cursor::{Cursor, Tool},
+		cursor::{Cursor, Tool, HoverObjects},
 		grid::{Grid, CellPos},
-		gizmo_entity::{SetHoverGizmo, RemoveHoverGizmo, UpdateHoverGizmo},
+		gizmo_entity::{SetHoverGizmo, RemoveHoverGizmo},
 	},
 	object::{
 		ObjectType,
@@ -21,6 +21,7 @@ use crate::game::{
 	},
 	material::Materials,
 	surface::{Surface, cell_material},
+	events::{UpdateHoverOutline, UpdateHoverGizmo},
 };
 
 pub struct GridEntityPlugin;
@@ -72,18 +73,28 @@ pub fn setup(
 	}
 }
 
-pub fn handle_hover_start(
+fn handle_hover_start(
 	trigger: Trigger<Pointer<Over>>,
 	mut commands: Commands,
 	mut cursor: ResMut<Cursor>,
 	cells: Query<&CellPos, With<CellMesh>>,
+	grid: Res<Grid>,
 ) {
 	let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellPos position: {}", e); return}};
 	cursor.hover_cell = Some(pos);
 	commands.trigger(SetHoverGizmo(pos));
+	if matches!(cursor.tool, Tool::None) || matches!(cursor.tool, Tool::Select(_)) {
+		match grid.get_cell_objects(pos) {
+			Some(objects) => {
+				cursor.hover_objects = HoverObjects::Many(objects, 0);
+			}
+			None => (),
+		}
+		commands.trigger(UpdateHoverOutline);
+	}
 }
 
-pub fn handle_hover_end(
+fn handle_hover_end(
 	trigger: Trigger<Pointer<Out>>,
 	mut commands: Commands,
 	mut cursor: ResMut<Cursor>,
@@ -93,20 +104,31 @@ pub fn handle_hover_end(
 	let cursor_pos = match cursor.hover_cell {Some(pos) => pos, None => {return}};
 	if cursor_pos == cell_pos {
 		cursor.hover_cell = None;
+		cursor.hover_objects = HoverObjects::None;
+		commands.trigger(UpdateHoverOutline);
 	}
 	commands.trigger(RemoveHoverGizmo(cell_pos));
 }
 
-pub fn handle_click(
+fn handle_click(
 	trigger: Trigger<Pointer<Pressed>>,
 	mut commands: Commands,
-	cursor: ResMut<Cursor>,
+	mut cursor: ResMut<Cursor>,
 	mut grid: ResMut<Grid>,
 	cells: Query<&CellPos, With<CellMesh>>,
 ) {
 	let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse clicked unknown cell: {}", e); return}};
 
-	if matches!(cursor.tool, Tool::Terrain) {
+	if matches!(cursor.tool, Tool::None) || matches!(cursor.tool, Tool::Select(_)) {
+		if matches!(trigger.button, PointerButton::Primary) {
+			match cursor.hover_object() {
+				Some(instance_id) => cursor.tool = Tool::Select(instance_id),
+				None => cursor.tool = Tool::None,
+			};
+			commands.trigger(UpdateHoverOutline);
+			commands.trigger(UpdateHoverGizmo);
+		}
+	} else if matches!(cursor.tool, Tool::Terrain) {
 		let height = match grid.heights.get_mut(&pos) {Some(cell) => cell, None => {error!("Attempted to change height, but grid contains no cell height for pos {:?}.", pos); return}};
 		if matches!(trigger.button, PointerButton::Primary) {
 			*height += 1;

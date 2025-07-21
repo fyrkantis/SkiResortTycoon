@@ -42,7 +42,7 @@ pub fn red_box_scene(
 		Pickable {
 			is_hoverable: true,
 			should_block_lower: false,
-		}
+		},
 	));
 	Scene::new(world)
 }
@@ -56,6 +56,10 @@ pub fn blue_sphere_scene(
 		Mesh3d(meshes.add(Sphere::new(0.5))),
 		MeshMaterial3d(materials.blue.clone()),
 		Transform::from_xyz(0., 0.25, 0.),
+		Pickable {
+			is_hoverable: true,
+			should_block_lower: false,
+		},
 	));
 	Scene::new(world)
 }

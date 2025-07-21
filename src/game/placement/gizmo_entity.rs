@@ -6,7 +6,10 @@ use crate::util::{
 	hex_mesh::cell_sharp_mesh,
 	hex_gizmo::column_sloped,
 };
-use crate::game::placement::{grid::Grid, cursor::Cursor};
+use crate::game::{
+	placement::{grid::Grid, cursor::Cursor},
+	events::UpdateHoverGizmo,
+};
 
 pub struct GizmoEntityPlugin;
 impl Plugin for GizmoEntityPlugin {
@@ -82,8 +85,6 @@ fn remove_hover_gizmo(
 	}
 }
 
-#[derive(Event, Debug, Clone, Copy)]
-pub struct UpdateHoverGizmo;
 fn update_hover_gizmo(
 	_trigger: Trigger<UpdateHoverGizmo>,
 	mut gizmo_assets: ResMut<Assets<GizmoAsset>>,

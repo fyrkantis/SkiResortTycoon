@@ -7,7 +7,7 @@ use rand::{prelude::*, random_bool};
 use crate::util::hex::{axial_to_xz, offset_to_axial};
 use crate::game::{
 	surface::Surface,
-	object::{ObjectInstance, structure::{StructureInstance, SpawnStructure}},
+	object::{ObjectInstance, structure::StructureInstance},
 };
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -40,17 +40,6 @@ pub struct Grid {
 }
 impl Grid {
 	pub const WATER_HEIGHT: f64 = -3.;
-
-	/// Adds the specified ObjectInstance to the objects map.
-	/// Returns the resulting instance id in the map.
-	pub fn push_object(&mut self, object: ObjectInstance) -> u32 {
-		let instance_id = match self.objects.last_key_value() {Some((id, _object)) => *id + 1, None => 0};
-		match self.objects.insert(instance_id, object) {
-			Some(old_object) => error!("When pushing new object instance, the resulting instance id {} was already in use by {:?}, which was now replaced in the grid.", instance_id, old_object),
-			None => (),
-		}
-		instance_id
-	}
 	
 	/// Generates a new grid with set width and length.
 	/// It is recommended to use an odd number for width to avoid sharp corners.
@@ -87,6 +76,36 @@ impl Grid {
 			}
 		}
 		grid
+	}
+
+	/// Adds the specified ObjectInstance to the objects map.
+	/// Returns the resulting instance id in the map.
+	pub fn push_object(&mut self, object: ObjectInstance) -> u32 {
+		let instance_id = match self.objects.last_key_value() {Some((id, _object)) => *id + 1, None => 0};
+		match self.objects.insert(instance_id, object) {
+			Some(old_object) => error!("When pushing new object instance, the resulting instance id {} was already in use by {:?}, which was now replaced in the grid.", instance_id, old_object),
+			None => (),
+		}
+		instance_id
+	}
+
+	/// Finds all object instances that overlap with the specified cell and returns their instance IDs.
+	pub fn get_cell_objects(&self, pos: Hex) -> Option<Vec<u32>> {
+		let mut results: Vec<u32> = Vec::new();
+		for (instance_id, object) in self.objects.iter() {
+			match object {
+				ObjectInstance::Structure(structure) => {
+					if structure.pos == pos {
+						results.push(*instance_id);
+					}
+				},
+				ObjectInstance::Lift(_lift) => (),
+			}
+		}
+		if results.iter().count() <= 0 {
+			return None
+		}
+		Some(results)
 	}
 }
 

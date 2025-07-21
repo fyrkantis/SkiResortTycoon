@@ -1,10 +1,14 @@
 use bevy::prelude::*;
 use bevy_egui::*;
 
-use crate::game::{object::ObjectType, object::structure::StructureTypes};
+use crate::game::{
+	object::{ObjectType, structure::StructureTypes},
+	events::UpdateHoverOutline,
+};
 use crate::game::placement::cursor::{Cursor, Tool};
 
 pub fn setup(
+	mut commands: Commands,
 	mut contexts: EguiContexts,
 	mut cursor: ResMut<Cursor>,
 	structures: Res<StructureTypes>,
@@ -18,7 +22,10 @@ pub fn setup(
 		if ui.button("Remove Structure").clicked() {cursor.tool = Tool::Remove;}
 		if ui.button("Add/remove piste").clicked() {cursor.tool = Tool::Surface;}
 		if ui.button("Raise/lower terrain").clicked() {cursor.tool = Tool::Terrain;}
-		if ui.button("None").clicked() {cursor.tool = Tool::None;}
+		if ui.button("None").clicked() {
+			cursor.tool = Tool::None;
+			commands.trigger(UpdateHoverOutline);
+		}
 
 		if matches!(cursor.tool, Tool::Place) {
 			ui.label("Structures");
