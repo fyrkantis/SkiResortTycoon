@@ -83,7 +83,7 @@ fn handle_hover_start(
 	let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse hovered over cell, but it's missing a CellPos position: {}", e); return}};
 	cursor.hover_cell = Some(pos);
 	commands.trigger(SetHoverGizmo(pos));
-	if matches!(cursor.tool, Tool::None) || matches!(cursor.tool, Tool::Select(_)) {
+	/*if matches!(cursor.tool, Tool::None) || matches!(cursor.tool, Tool::Select(_)) {
 		match grid.get_cell_objects(pos) {
 			Some(objects) => {
 				cursor.hover_objects = HoverObjects::Many(objects, 0);
@@ -91,7 +91,7 @@ fn handle_hover_start(
 			None => (),
 		}
 		commands.trigger(UpdateHoverOutline);
-	}
+	}*/
 }
 
 fn handle_hover_end(
@@ -104,7 +104,7 @@ fn handle_hover_end(
 	let cursor_pos = match cursor.hover_cell {Some(pos) => pos, None => {return}};
 	if cursor_pos == cell_pos {
 		cursor.hover_cell = None;
-		cursor.hover_objects = HoverObjects::None;
+		//cursor.hover_objects = HoverObjects::None;
 		commands.trigger(UpdateHoverOutline);
 	}
 	commands.trigger(RemoveHoverGizmo(cell_pos));
@@ -119,7 +119,7 @@ fn handle_click(
 ) {
 	let pos = match cells.get(trigger.target()) {Ok(pos) => pos.0, Err(e) => {error!("Mouse clicked unknown cell: {}", e); return}};
 
-	if matches!(cursor.tool, Tool::None) || matches!(cursor.tool, Tool::Select(_)) {
+	/*if matches!(cursor.tool, Tool::None) || matches!(cursor.tool, Tool::Select(_)) {
 		if matches!(trigger.button, PointerButton::Primary) {
 			match cursor.hover_object() {
 				Some(instance_id) => cursor.tool = Tool::Select(instance_id),
@@ -128,7 +128,7 @@ fn handle_click(
 			commands.trigger(UpdateHoverOutline);
 			commands.trigger(UpdateHoverGizmo);
 		}
-	} else if matches!(cursor.tool, Tool::Terrain) {
+	} else */if matches!(cursor.tool, Tool::Terrain) {
 		let height = match grid.heights.get_mut(&pos) {Some(cell) => cell, None => {error!("Attempted to change height, but grid contains no cell height for pos {:?}.", pos); return}};
 		if matches!(trigger.button, PointerButton::Primary) {
 			*height += 1;

@@ -13,11 +13,19 @@ pub fn tree_scene(
 		Mesh3d(mesh_assets.add(Cylinder::new(0.1, 0.5))),
 		MeshMaterial3d(wood.clone()),
 		Transform::from_xyz(0., 0.25, 0.),
+		Pickable {
+			is_hoverable: true,
+			should_block_lower: false,
+		},
 	));
 	world.spawn((
 		Mesh3d(mesh_assets.add(Cone::new(0.2, 0.5))),
 		MeshMaterial3d(wood.clone()),
 		Transform::from_translation(Vec3::ZERO),
+		Pickable {
+			is_hoverable: true,
+			should_block_lower: false,
+		},
 	));
 	for i in 0..3 {
 		let i_f = i as f32;
@@ -25,6 +33,10 @@ pub fn tree_scene(
 			Mesh3d(mesh_assets.add(Cone::new(0.5 - i_f / 10., 0.5 - i_f / 20.))),
 			MeshMaterial3d(leaves.clone()),
 			Transform::from_xyz(0., 0.75 + i_f / 4., 0.),
+			Pickable {
+			is_hoverable: true,
+			should_block_lower: false,
+		},
 		));
 	}
 	Scene::new(world)

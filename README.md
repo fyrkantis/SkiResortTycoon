@@ -15,3 +15,4 @@
 - [ ] TAB to cycle between hovered items.
 - [ ] Fix cells being picked through items, even when the correct tool is selected.
 - [ ] Generally improve the logic for selecting items by selecting cells.
+- [ ] Solve "Mouse clicked structure before it was hovered." error.

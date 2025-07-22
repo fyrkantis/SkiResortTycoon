@@ -124,11 +124,9 @@ fn handle_hover_start(
 	mut cursor: ResMut<Cursor>,
 	structures: Query<&ObjectEntity, With<StructureEntity>>,
 ) {
-	if matches!(cursor.tool, Tool::None) || matches!(cursor.tool, Tool::Select(_)) {
+	if matches!(cursor.tool, Tool::None) || matches!(cursor.tool, Tool::Select(_)) || matches!(cursor.tool, Tool::Remove) {
 		let instance_id = match structures.get(trigger.target()) {Ok(instance) => instance.0, Err(e) => {error!("Mouse started hovering unknown structure: {}", e); return}};
 		trigger.propagate(false);
-		cursor.hover_cell = None;
-		commands.trigger(UpdateHoverGizmo);
 		cursor.hover_objects = HoverObjects::Single(instance_id);
 		commands.trigger(UpdateHoverOutline);
 	}
@@ -142,8 +140,8 @@ fn handle_hover_end(
 ) {
 	let instance_id = match structures.get(trigger.target()) {Ok(instance) => instance.0, Err(e) => {error!("Mouse stopped hovering unknown structure: {}", e); return}};
 	
-	if cursor.tool == Tool::Select(instance_id) {
-		cursor.tool = Tool::None;
+	if cursor.hover_objects == HoverObjects::Single(instance_id) {
+		cursor.hover_objects = HoverObjects::None;
 		commands.trigger(UpdateHoverOutline);
 	}
 }
@@ -152,6 +150,7 @@ fn handle_click(
 	mut trigger: Trigger<Pointer<Pressed>>,
 	mut commands: Commands,
 	mut cursor: ResMut<Cursor>,
+	mut grid: ResMut<Grid>,
 ) {
 	if matches!(cursor.tool, Tool::None) || matches!(cursor.tool, Tool::Select(_)) {
 		trigger.propagate(false); // TODO: Double-check and test if this is the best way to handle overlap.
@@ -159,6 +158,13 @@ fn handle_click(
 			let instance_id = match cursor.hover_object() {Some(instance_id) => instance_id, None => {error!("Mouse clicked structure before it was hovered."); return}};
 			cursor.tool = Tool::Select(instance_id);
 			commands.trigger(UpdateHoverOutline);
+		}
+	} else if matches!(cursor.tool, Tool::Remove) {
+		trigger.propagate(false);
+		if matches!(trigger.button, PointerButton::Primary) {
+			let instance_id = match cursor.hover_object() {Some(instance_id) => instance_id, None => {error!("Mouse clicked structure before it was hovered."); return}};
+			match grid.objects.remove(&instance_id) {Some(_) => (), None => {error!("Attempted to remove unknown structure with instance ID {}.", instance_id); return}}
+			commands.trigger(DespawnStructure(instance_id));
 		}
 	}
 }
