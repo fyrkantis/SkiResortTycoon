@@ -6,9 +6,7 @@ use bevy::prelude::*;
 use bevy_mod_outline::OutlinePlugin;
 use bevy_egui::EguiPlugin;
 
-mod game;
-mod ui;
-mod util;
+mod grid;
 
 fn main() {
 	App::new()
@@ -17,9 +15,27 @@ fn main() {
 		OutlinePlugin,
 		MeshPickingPlugin,
 		EguiPlugin {enable_multipass_for_primary_context: true},
-		game::GamePlugin,
-		ui::UiPlugin,
+		grid::GridPlugin,
 	))
 	.insert_resource(MeshPickingSettings {require_markers: true, ..default()})
+	.init_resource::<GameState>()
 	.run();
+}
+
+#[derive(Resource, Default)]
+#[allow(dead_code)] // TODO: Remove this when in use.
+pub enum GameState {
+	#[default]
+	MainMenu,
+	Loading,
+	InGame {
+		pub current_player: GameClient,
+
+	},
+}
+
+#[allow(dead_code)] // TODO: Remove this when in use.
+pub struct GameClient {
+	pub player_id: u16,
+	pub 
 }
