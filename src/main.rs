@@ -7,35 +7,20 @@ use bevy_mod_outline::OutlinePlugin;
 use bevy_egui::EguiPlugin;
 
 mod grid;
+mod scene;
+mod camera;
 
 fn main() {
 	App::new()
+	.insert_resource(MeshPickingSettings {require_markers: true, ..default()})
 	.add_plugins((
 		DefaultPlugins,
 		OutlinePlugin,
 		MeshPickingPlugin,
 		EguiPlugin {enable_multipass_for_primary_context: true},
 		grid::GridPlugin,
+		camera::CameraPlugin,
 	))
-	.insert_resource(MeshPickingSettings {require_markers: true, ..default()})
-	.init_resource::<GameState>()
+	.add_systems(Startup, scene::setup)
 	.run();
-}
-
-#[derive(Resource, Default)]
-#[allow(dead_code)] // TODO: Remove this when in use.
-pub enum GameState {
-	#[default]
-	MainMenu,
-	Loading,
-	InGame {
-		pub current_player: GameClient,
-
-	},
-}
-
-#[allow(dead_code)] // TODO: Remove this when in use.
-pub struct GameClient {
-	pub player_id: u16,
-	pub 
 }
