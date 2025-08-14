@@ -1,14 +1,7 @@
 use std::f32::consts::PI;
 use bevy::prelude::*;
 
-pub struct ScenePlugin;
-impl Plugin for ScenePlugin {
-	fn build(&self, app: &mut App) {
-		app.add_systems(Startup, setup);
-	}
-}
-
-fn setup(
+pub fn setup(
 	mut commands: Commands,
 	mut gizmo_assets: ResMut<Assets<GizmoAsset>>,
 ) {

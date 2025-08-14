@@ -8,16 +8,20 @@ use bevy_egui::EguiPlugin;
 
 mod util;
 mod grid;
+mod scene;
+mod camera;
 
 fn main() {
 	App::new()
+	.insert_resource(MeshPickingSettings {require_markers: true, ..default()})
 	.add_plugins((
 		DefaultPlugins,
 		OutlinePlugin,
 		MeshPickingPlugin,
 		EguiPlugin {enable_multipass_for_primary_context: true},
 		grid::GridPlugin,
+		camera::CameraPlugin,
 	))
-	.insert_resource(MeshPickingSettings {require_markers: true, ..default()})
+	.add_systems(Startup, scene::setup)
 	.run();
 }
