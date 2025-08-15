@@ -5,6 +5,7 @@ use hexx::Hex;
 mod surface;
 mod object;
 mod worldgen;
+mod geometry;
 
 pub struct GridPlugin;
 impl Plugin for GridPlugin {
